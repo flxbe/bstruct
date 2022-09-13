@@ -12,11 +12,14 @@ from typing import (
 import typing
 import dataclasses
 from enum import IntEnum
-from struct import Struct
+from struct import Struct, error as StructError
 from decimal import Decimal
 
 
-# TODO: add support for big endian
+# TODO:
+# - add support for different byte orders
+# - create Benchmark with different implementations
+# - Handle struct errors
 
 
 __version__ = "0.1.0"
@@ -347,17 +350,12 @@ def _derive(cls: type[T], byte_order: ByteOrder) -> type[T]:
     attribute_names = [field.name for field in fields]
 
     def _decode(data: bytes) -> T:
-        if len(data) != struct.size:
-            raise ValueError(
-                f"Invalid data size: Expected {struct.size} bytes, but got {len(data)}"
-            )
-
         raw_attributes = struct.unpack(data)
 
-        attributes = (
+        attributes = [
             decode_attribute(d) if decode_attribute is not None else d
             for decode_attribute, d in zip(attribute_decoders, raw_attributes)
-        )
+        ]
 
         return cls(*attributes)
 
@@ -390,7 +388,11 @@ def decode(cls: type[T], data: bytes, strict: bool = True) -> T:
     if not strict:
         data = data[: binary_data.size]
 
-    return binary_data.decode(data)
+    try:
+        return binary_data.decode(data)
+    except StructError:
+        # TODO: Handle
+        raise
 
 
 def decode_from(cls: type[T], data_stream: BytesIO) -> T:
@@ -398,7 +400,11 @@ def decode_from(cls: type[T], data_stream: BytesIO) -> T:
 
     data = data_stream.read(binary_data.size)
 
-    return binary_data.decode(data)
+    try:
+        return binary_data.decode(data)
+    except StructError:
+        # TODO: Handle
+        raise
 
 
 def encode(value: Any) -> bytes:
