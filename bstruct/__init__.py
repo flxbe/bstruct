@@ -447,17 +447,9 @@ def decode(cls: type[T], data: bytes, strict: bool = True) -> T:
         raise
 
 
-def decode_raw(cls: Any, data: bytes, strict: bool = True) -> tuple[Any, ...]:
+def get_struct(cls: Any) -> Struct:
     struct_data = _get_struct_data(cls)
-
-    if not strict:
-        data = data[: struct_data.size]
-
-    try:
-        return struct_data.struct.unpack(data)
-    except StructError:
-        # TODO: Handle
-        raise
+    return struct_data.struct
 
 
 def decode_from(cls: type[T], data_stream: BytesIO) -> T:

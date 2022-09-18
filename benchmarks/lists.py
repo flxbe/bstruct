@@ -32,7 +32,14 @@ def _decode_native_list() -> None:
     bstruct.decode(NativeList, native_list_data)
 
 
-_measure_and_print("native_list", _decode_native_list)
+_measure_and_print("decode: native_list", _decode_native_list)
+
+
+def _encode_native_list() -> None:
+    bstruct.encode(native_list)
+
+
+_measure_and_print("encode: native_list", _encode_native_list)
 
 
 @bstruct.derive()
@@ -70,11 +77,35 @@ def _decode_class_list() -> None:
     bstruct.decode(ClassList, class_list_data)
 
 
-_measure_and_print("class_list", _decode_class_list)
+_measure_and_print("decode: class_list", _decode_class_list)
 
 
-def _decode_raw_class_list() -> None:
-    bstruct.decode_raw(ClassList, class_list_data)
+def _encode_class_list() -> None:
+    bstruct.encode(class_list)
 
 
-_measure_and_print("raw_class_list", _decode_raw_class_list)
+_measure_and_print("encode: class_list", _encode_class_list)
+
+
+raw_struct = bstruct.get_struct(ClassList)
+raw_list = (1, 2, 3, 4, 5, 6, 7, 8, 9, 0)
+
+
+def _decode_raw_list() -> tuple[int]:
+    return raw_struct.unpack(class_list_data)
+
+
+assert _decode_raw_list() == raw_list
+
+
+_measure_and_print("decode: raw_list", _decode_raw_list)
+
+
+def _encode_raw_list() -> bytes:
+    return raw_struct.pack(*raw_list)
+
+
+assert _encode_raw_list() == class_list_data
+
+
+_measure_and_print("encode: raw_list", _encode_raw_list)
