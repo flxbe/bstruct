@@ -39,7 +39,6 @@ _measure_and_print("native_list", _decode_native_list)
 @dataclass
 class ListItem:
     a: bstruct.u8
-    b: bstruct.u8
 
 
 @bstruct.derive()
@@ -50,16 +49,16 @@ class ClassList:
 
 class_list = ClassList(
     values=[
-        ListItem(1, 1),
-        ListItem(2, 1),
-        ListItem(3, 1),
-        ListItem(4, 1),
-        ListItem(5, 1),
-        ListItem(6, 1),
-        ListItem(7, 1),
-        ListItem(8, 1),
-        ListItem(9, 1),
-        ListItem(0, 1),
+        ListItem(1),
+        ListItem(2),
+        ListItem(3),
+        ListItem(4),
+        ListItem(5),
+        ListItem(6),
+        ListItem(7),
+        ListItem(8),
+        ListItem(9),
+        ListItem(0),
     ]
 )
 
@@ -72,3 +71,10 @@ def _decode_class_list() -> None:
 
 
 _measure_and_print("class_list", _decode_class_list)
+
+
+def _decode_raw_class_list() -> None:
+    bstruct.decode_raw(ClassList, class_list_data)
+
+
+_measure_and_print("raw_class_list", _decode_raw_class_list)
