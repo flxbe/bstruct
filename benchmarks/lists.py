@@ -3,6 +3,7 @@ from typing import Annotated, Any, Callable
 from dataclasses import dataclass
 
 import bstruct
+import construct
 
 
 RUNS = 100_000
@@ -109,3 +110,41 @@ assert _encode_raw_list() == class_list_data
 
 
 _measure_and_print("encode: raw_list", _encode_raw_list)
+
+
+ConstructItem = construct.Struct(
+    "a" / construct.Int8ul,  # type: ignore
+)
+
+ConstructClass = construct.Struct(
+    "values" / construct.Array(10, ConstructItem),
+)
+
+
+def _decode_construct_list() -> construct.Container:
+    return ConstructClass.parse(class_list_data)  # type: ignore
+
+
+_measure_and_print("decode: construct_list", _decode_construct_list)
+
+
+def _encode_construct_list() -> bytes:
+    return ConstructClass.build(  # type: ignore
+        {
+            "values": [
+                {"a": 1},
+                {"a": 2},
+                {"a": 3},
+                {"a": 4},
+                {"a": 5},
+                {"a": 6},
+                {"a": 7},
+                {"a": 8},
+                {"a": 9},
+                {"a": 0},
+            ]
+        }
+    )
+
+
+_measure_and_print("encode: construct_list", _encode_construct_list)
