@@ -16,7 +16,9 @@ def test_should_encode_bool_values() -> None:
     original = TestData(v1=True, v2=False)
 
     data = bstruct.encode(original)
+    print(data)
     decoded = bstruct.decode(TestData, data)
+    print(decoded)
 
     assert decoded == original
 
@@ -201,10 +203,17 @@ def test_should_encode_I80F48() -> None:
 def test_should_encode_arrays() -> None:
     @bstruct.derive()
     @dataclass
-    class TestData:
-        value: Annotated[list[bstruct.u8], bstruct.Length(5)]
+    class TestItem:
+        a: bstruct.u8
+        b: bstruct.u8
 
-    original = TestData([1, 2, 3, 4, 5])
+    @bstruct.derive()
+    @dataclass
+    class TestData:
+        native_values: Annotated[list[bstruct.u8], bstruct.Length(5)]
+        custom_values: Annotated[list[TestItem], bstruct.Length(2)]
+
+    original = TestData([1, 2, 3, 4, 5], custom_values=[TestItem(1, 2), TestItem(3, 4)])
 
     data = bstruct.encode(original)
     decoded = bstruct.decode(TestData, data)

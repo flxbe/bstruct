@@ -1,13 +1,14 @@
+from __future__ import annotations
 from io import BytesIO
 from typing import (
     Any,
     Generic,
+    Iterator,
     TypeVar,
     Callable,
     Literal,
     Optional,
     Annotated,
-    Union,
 )
 import typing
 import dataclasses
@@ -20,6 +21,8 @@ from decimal import Decimal
 # - add support for different byte orders
 # - create Benchmark with different implementations
 # - Handle struct errors
+# - Allow variably sized list/bytes attribute at the end of a struct
+# - Test behaviour when using 'NewType'
 
 
 __version__ = "0.1.0"
@@ -27,25 +30,38 @@ __version__ = "0.1.0"
 
 T = TypeVar("T")
 
-
-IntDecoder = Callable[[int], T]
 BytesDecoder = Callable[[bytes], T]
-Decoder = Union[IntDecoder[T], BytesDecoder[T]]
-
-
-IntEncoder = Callable[[T], int]
 BytesEncoder = Callable[[T], bytes]
-Encoder = Union[IntEncoder[T], BytesEncoder[T]]
 
+Decoder = Callable[[Iterator[Any]], T]
+Encoder = Callable[[T, list[Any]], None]
 
 ByteOrder = Literal["big", "little"]
 
 
-class _BinaryData(Generic[T]):
-    def __init__(self, size: int, decode: BytesDecoder[T], encode: BytesEncoder[T]):
-        self.size = size
+class _StructData(Generic[T]):
+    def __init__(
+        self,
+        format: str,
+        decode: Decoder[T],
+        encode: Encoder[T],
+    ):
+        self.format = format
+        self.struct = Struct(f"<{format}")
+        self.size = self.struct.size
+
         self.decode = decode
         self.encode = encode
+
+    @staticmethod
+    def create_patched_data(
+        size: int, decode: BytesDecoder[T], encode: BytesEncoder[T]
+    ) -> _StructData[T]:
+        return _StructData(
+            format=f"{size}s",
+            decode=lambda iterator: decode(next(iterator)),
+            encode=lambda t, l: l.append(encode(t)),
+        )
 
 
 _IntSize = Literal[8, 16, 32, 64, 128, 256]
@@ -125,7 +141,7 @@ def _resolve_parser(
             raise TypeError("Inner type for list needed.")
         elif typing.get_origin(annotated_type) is list:
             return _resolve_array_encoding(annotated_type, annotation_args)
-    elif _has_binary_data(attribute_type):
+    elif _has_struct_data(attribute_type):
         return _resolve_custom_encoding(attribute_type)
 
     assert False
@@ -133,7 +149,7 @@ def _resolve_parser(
 
 def _resolve_array_encoding(
     array_type: Any, metadata: list[Any]
-) -> tuple[str, BytesDecoder[Any], BytesEncoder[Any]]:
+) -> tuple[str, Decoder[Any], Encoder[Any]]:
     array_length = _resolve_array_length(metadata)
 
     array_type_args = typing.get_args(array_type)
@@ -141,25 +157,50 @@ def _resolve_array_encoding(
     inner_type = array_type_args[0]
 
     inner_format, inner_decode, inner_encode = _resolve_parser(inner_type)
-
     array_format = "".join([inner_format] * array_length)
-    array_struct = Struct(array_format)
-
-    total_array_format = f"{array_struct.size}s"
 
     if inner_decode is None:
-        decode: BytesDecoder[list] = lambda data: list(array_struct.unpack(data))
-    else:
-        decode: BytesDecoder[list] = lambda data: [
-            inner_decode(v) for v in array_struct.unpack(data)  # type: ignore
-        ]
+        assert inner_encode is None
 
-    if inner_encode is None:
-        encode: BytesEncoder[list[Any]] = lambda l: array_struct.pack(*l)
-    else:
-        encode: BytesEncoder[list[Any]] = lambda l: array_struct.pack(*(inner_encode(v) for v in l))  # type: ignore
+        # If the array consists of simple, native elements, decode the complete array directly.
 
-    return total_array_format, decode, encode
+        def _decode(attributes: Iterator[Any]) -> list[Any]:
+            return [next(attributes) for _ in range(array_length)]
+
+        def _encode(l: list[Any], attributes: list[Any]) -> None:
+            attributes.extend(l)
+
+    elif inner_encode is None:
+        assert inner_decode is not None
+
+        # If only the decoder must process the items
+
+        # Reassign to new variable to avoid type checking errors of inner_decode
+        # being None
+        _inner_decode = inner_decode
+
+        def _decode(attributes: Iterator[Any]) -> list[Any]:
+            return [_inner_decode(attributes) for _ in range(array_length)]
+
+        def _encode(l: list[Any], attributes: list[Any]) -> None:
+            attributes.extend(l)
+
+    else:
+        assert inner_decode is not None
+        assert inner_encode is not None
+
+        # Reassign to new variable to avoid type checking errors of inner_decode
+        # being None
+        _inner_decode = inner_decode
+
+        def _decode(attributes: Iterator[Any]) -> list[Any]:
+            return [_inner_decode(attributes) for _ in range(array_length)]
+
+        def _encode(l: list[Any], attributes: list[Any]) -> None:
+            for item in l:
+                inner_encode(item, attributes)
+
+    return array_format, _decode, _encode
 
 
 def _resolve_array_length(metadata: list[Any]) -> int:
@@ -172,7 +213,7 @@ def _resolve_array_length(metadata: list[Any]) -> int:
 
 def _resolve_int_encoding(
     metadata: list[Any],
-) -> tuple[str, Optional[BytesDecoder[int]], Optional[BytesEncoder[int]]]:
+) -> tuple[str, Optional[Decoder[int]], Optional[Encoder[int]]]:
     for data in metadata:
         if isinstance(data, UnsignedInteger):
             if data.size == 8:
@@ -208,53 +249,57 @@ def _resolve_int_encoding(
     raise TypeError("Cannot find integer type annotation")
 
 
-def _decode_uint(data: bytes) -> int:
-    return int.from_bytes(data, "little", signed=False)
+def _decode_uint(attributes: Iterator[Any]) -> int:
+    return int.from_bytes(next(attributes), "little", signed=False)
 
 
-def _encode_uint128(value: int) -> bytes:
-    return value.to_bytes(16, byteorder="little", signed=False)
+def _encode_uint128(value: int, attributes: list[Any]) -> None:
+    data = value.to_bytes(16, byteorder="little", signed=False)
+    attributes.append(data)
 
 
-def _encode_uint256(value: int) -> bytes:
-    return value.to_bytes(32, byteorder="little", signed=False)
+def _encode_uint256(value: int, attributes: list[Any]) -> None:
+    data = value.to_bytes(32, byteorder="little", signed=False)
+    attributes.append(data)
 
 
-def _decode_int(data: bytes) -> int:
-    return int.from_bytes(data, "little", signed=True)
+def _decode_int(attributes: Iterator[Any]) -> int:
+    return int.from_bytes(next(attributes), "little", signed=True)
 
 
-def _encode_int128(value: int) -> bytes:
-    return value.to_bytes(16, byteorder="little", signed=True)
+def _encode_int128(value: int, attributes: list[Any]) -> None:
+    data = value.to_bytes(16, byteorder="little", signed=True)
+    attributes.append(data)
 
 
-def _encode_int256(value: int) -> bytes:
-    return value.to_bytes(32, byteorder="little", signed=True)
+def _encode_int256(value: int, attributes: list[Any]) -> None:
+    data = value.to_bytes(32, byteorder="little", signed=True)
+    attributes.append(data)
 
 
 def _resolve_int_enum_encoding(
-    cls: type[IntEnum], metadata: list[Any]
+    cls: Callable[[int], IntEnum], metadata: list[Any]
 ) -> tuple[str, Decoder[IntEnum], Optional[Encoder[IntEnum]]]:
     for data in metadata:
         if isinstance(data, UnsignedInteger):
             if data.size == 8:
-                return "B", cls, None
+                return "B", lambda a: cls(next(a)), None
             elif data.size == 16:
-                return "H", cls, None
+                return "H", lambda a: cls(next(a)), None
             elif data.size == 32:
-                return "I", cls, None
+                return "I", lambda a: cls(next(a)), None
             elif data.size == 64:
-                return "Q", cls, None
+                return "Q", lambda a: cls(next(a)), None
             elif data.size == 128:
 
-                def _decode_cls(data: bytes) -> IntEnum:
-                    return cls(_decode_uint(data))
+                def _decode_cls(attributes: Iterator[Any]) -> IntEnum:
+                    return cls(_decode_uint(attributes))
 
                 return "16s", _decode_cls, _encode_uint128
             elif data.size == 256:
 
-                def _decode_cls(data: bytes) -> IntEnum:
-                    return cls(_decode_uint(data))
+                def _decode_cls(attributes: Iterator[Any]) -> IntEnum:
+                    return cls(_decode_uint(attributes))
 
                 return "32s", _decode_cls, _encode_uint256
             else:
@@ -265,7 +310,7 @@ def _resolve_int_enum_encoding(
 
 def _resolve_str_encoding(
     metadata: list[Any],
-) -> tuple[str, BytesDecoder[str], BytesEncoder[str]]:
+) -> tuple[str, Decoder[str], Encoder[str]]:
     for data in metadata:
         if isinstance(data, Size):
             return (
@@ -277,14 +322,16 @@ def _resolve_str_encoding(
     raise TypeError("Cannot find string type annotation")
 
 
-def _decode_str(value: bytes) -> str:
+def _decode_str(attributes: Iterator[Any]) -> str:
+    value: bytes = next(attributes)
     return value.rstrip(b"\0").decode("utf-8")
 
 
-def _encode_str(value: str) -> bytes:
+def _encode_str(value: str, attributes: list[Any]) -> None:
     # The `struct` library automatically adds zeros to the end of
     # the encoded string to fill the necessary `data.size` bytes.
-    return value.encode("utf-8")
+    data = value.encode("utf-8")
+    attributes.append(data)
 
 
 def _resolve_bytes_encoding(metadata: list[Any]) -> tuple[str, None, None]:
@@ -297,7 +344,7 @@ def _resolve_bytes_encoding(metadata: list[Any]) -> tuple[str, None, None]:
 
 def _resolve_decimal_encoding(
     metadata: list[Any],
-) -> tuple[str, BytesDecoder[Decimal], BytesEncoder[Decimal]]:
+) -> tuple[str, Decoder[Decimal], Encoder[Decimal]]:
     for data in metadata:
         if isinstance(data, _I80F48):
             return "16s", _decode_I80F48, _encode_I80F48
@@ -310,20 +357,23 @@ def _resolve_decimal_encoding(
 I80F48_DIVISOR = Decimal(2**48)
 
 
-def _decode_I80F48(data: bytes) -> Decimal:
-    return int.from_bytes(data, "little", signed=True) / I80F48_DIVISOR
+def _decode_I80F48(attributes: Iterator[Any]) -> Decimal:
+    return int.from_bytes(next(attributes), "little", signed=True) / I80F48_DIVISOR
 
 
-def _encode_I80F48(value: Decimal) -> bytes:
-    return int(value * I80F48_DIVISOR).to_bytes(16, "little", signed=True)
+def _encode_I80F48(value: Decimal, attributes: list[Any]) -> None:
+    data = int(value * I80F48_DIVISOR).to_bytes(16, "little", signed=True)
+    attributes.append(data)
 
 
 def _resolve_custom_encoding(
     cls: type[T],
-) -> tuple[str, BytesDecoder[T], BytesEncoder[T]]:
-    binary_data = _get_binary_data(cls)
+) -> tuple[str, Decoder[T], Encoder[T]]:
+    struct_data = _get_struct_data(cls)
 
-    return f"{binary_data.size}s", binary_data.decode, binary_data.encode
+    return struct_data.format, struct_data.decode, struct_data.encode
+
+    # return f"{struct_data.size}s", struct_data.decode, struct_data.encode
 
 
 def derive(*, byte_order: ByteOrder = "little") -> Callable[[type[T]], type[T]]:
@@ -338,7 +388,7 @@ def _derive(cls: type[T], byte_order: ByteOrder) -> type[T]:
 
     attribute_decoders: list[Optional[Decoder[Any]]] = []
     attribute_encoders: list[Optional[Encoder[Any]]] = []
-    full_format = "<"
+    full_format = ""
     for field in fields:
         format, decoder, encoder = _resolve_parser(field.type)
 
@@ -346,31 +396,32 @@ def _derive(cls: type[T], byte_order: ByteOrder) -> type[T]:
         attribute_decoders.append(decoder)
         attribute_encoders.append(encoder)
 
-    struct = Struct(full_format)
     attribute_names = [field.name for field in fields]
 
-    def _decode(data: bytes) -> T:
-        raw_attributes = struct.unpack(data)
-
+    def _decode(raw_attributes: Iterator[Any]) -> T:
         attributes = [
-            decode_attribute(d) if decode_attribute is not None else d
-            for decode_attribute, d in zip(attribute_decoders, raw_attributes)
+            decode_attribute(raw_attributes)
+            if decode_attribute is not None
+            else next(raw_attributes)
+            for decode_attribute in attribute_decoders
         ]
 
         return cls(*attributes)
 
-    def _encode(value: T) -> bytes:
-        raw_attributes = (
-            encode_attribute(getattr(value, name))
-            if encode_attribute is not None
-            else getattr(value, name)
-            for encode_attribute, name in zip(attribute_encoders, attribute_names)
-        )
+    def _encode(value: T, raw_attributes: list[Any]) -> None:
+        for encode_attribute, name in zip(attribute_encoders, attribute_names):
+            attribute = getattr(value, name)
+            if encode_attribute is not None:
+                encode_attribute(attribute, raw_attributes)
+            else:
+                raw_attributes.append(attribute)
 
-        return struct.pack(*raw_attributes)
-
-    binary_data = _BinaryData(struct.size, _decode, _encode)
-    _set_binary_data(cls, binary_data)
+    struct_data = _StructData(
+        format=full_format,
+        decode=_decode,
+        encode=_encode,
+    )
+    _set_struct_data(cls, struct_data)
 
     return cls
 
@@ -378,30 +429,32 @@ def _derive(cls: type[T], byte_order: ByteOrder) -> type[T]:
 def patch(
     cls: type[T], size: int, decode: BytesDecoder[T], encode: BytesEncoder[T]
 ) -> None:
-    binary_data = _BinaryData(size, decode, encode)
-    _set_binary_data(cls, binary_data)
+    struct_data = _StructData.create_patched_data(size, decode, encode)
+    _set_struct_data(cls, struct_data)
 
 
 def decode(cls: type[T], data: bytes, strict: bool = True) -> T:
-    binary_data = _get_binary_data(cls)
+    struct_data = _get_struct_data(cls)
 
     if not strict:
-        data = data[: binary_data.size]
+        data = data[: struct_data.size]
 
     try:
-        return binary_data.decode(data)
+        raw_attributes = struct_data.struct.unpack(data)
+        return struct_data.decode(iter(raw_attributes))
     except StructError:
         # TODO: Handle
         raise
 
 
 def decode_from(cls: type[T], data_stream: BytesIO) -> T:
-    binary_data = _get_binary_data(cls)
+    struct_data = _get_struct_data(cls)
 
-    data = data_stream.read(binary_data.size)
+    data = data_stream.read(struct_data.size)
 
     try:
-        return binary_data.decode(data)
+        raw_attributes = struct_data.struct.unpack(data)
+        return struct_data.decode(iter(raw_attributes))
     except StructError:
         # TODO: Handle
         raise
@@ -409,22 +462,26 @@ def decode_from(cls: type[T], data_stream: BytesIO) -> T:
 
 def encode(value: Any) -> bytes:
     cls = type(value)
-    binary_data = _get_binary_data(cls)
-    return binary_data.encode(value)
+    struct_data = _get_struct_data(cls)
+
+    raw_attributes: list[Any] = []
+    struct_data.encode(value, raw_attributes)
+
+    return struct_data.struct.pack(*raw_attributes)
 
 
 def get_size(cls: Any) -> int:
-    binary_data = _get_binary_data(cls)
-    return binary_data.size
+    struct_data = _get_struct_data(cls)
+    return struct_data.size
 
 
-def _get_binary_data(cls: type[T]) -> _BinaryData[T]:
-    return getattr(cls, "__binary_data")
+def _get_struct_data(cls: type[T]) -> _StructData[T]:
+    return getattr(cls, "__bstruct_data")
 
 
-def _set_binary_data(cls: type[T], data: _BinaryData[T]) -> None:
-    setattr(cls, "__binary_data", data)
+def _set_struct_data(cls: type[T], data: _StructData[T]) -> None:
+    setattr(cls, "__bstruct_data", data)
 
 
-def _has_binary_data(cls: Any) -> bool:
-    return hasattr(cls, "__binary_data")
+def _has_struct_data(cls: Any) -> bool:
+    return hasattr(cls, "__bstruct_data")
