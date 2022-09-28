@@ -8,7 +8,6 @@ from typing import (
     TypeVar,
     Callable,
     Literal,
-    Optional,
     Annotated,
 )
 import typing
@@ -138,6 +137,20 @@ def _encode_int256(value: int, attributes: list[Any]) -> None:
     attributes.append(data)
 
 
+# The last 6 bytes (== 6 * 8 == 48 bits) of the 16 byte value is the fractional part.
+# Therefore, divide by 2^48.
+I80F48_DIVISOR = Decimal(2**48)
+
+
+def _decode_I80F48(attributes: Iterator[Any]) -> Decimal:
+    return int.from_bytes(next(attributes), "little", signed=True) / I80F48_DIVISOR
+
+
+def _encode_I80F48(value: Decimal, attributes: list[Any]) -> None:
+    data = int(value * I80F48_DIVISOR).to_bytes(16, "little", signed=True)
+    attributes.append(data)
+
+
 class Encodings:
     bool: _NativeEncoding[bool] = _NativeEncoding(format="?")
 
@@ -155,6 +168,10 @@ class Encodings:
     i128 = _IntEncoding(format="16s", decode=_decode_int, encode=_encode_int128)
     i256 = _IntEncoding(format="32s", decode=_decode_int, encode=_encode_int256)
 
+    I80F48: CustomEncoding[Decimal] = CustomEncoding(
+        "16s", _decode_I80F48, _encode_I80F48
+    )
+
 
 u8 = Annotated[int, Encodings.u8]
 u16 = Annotated[int, Encodings.u16]
@@ -163,13 +180,14 @@ u64 = Annotated[int, Encodings.u64]
 u128 = Annotated[int, Encodings.u128]
 u256 = Annotated[int, Encodings.u256]
 
-
 i8 = Annotated[int, Encodings.i8]
 i16 = Annotated[int, Encodings.i16]
 i32 = Annotated[int, Encodings.i32]
 i64 = Annotated[int, Encodings.i64]
 i128 = Annotated[int, Encodings.i128]
 i256 = Annotated[int, Encodings.i256]
+
+I80F48 = Annotated[Decimal, Encodings.I80F48]
 
 
 class Length:
@@ -186,19 +204,12 @@ class Size:
         self.size = size
 
 
-class _I80F48:
-    pass
-
-
-I80F48 = Annotated[Decimal, _I80F48()]
-
-
 def _resolve_encoding(
     attribute_type: Any,
 ) -> Encoding[Any]:
     if isinstance(attribute_type, str):
         raise Exception(
-            "Do not use 'from __future__ import annotation' in the same file in which 'binary.derive()' is used."
+            "Do not use 'from __future__ import annotations' in the same file in which 'binary.derive()' is used."
         )
 
     if attribute_type is bool:
@@ -221,9 +232,13 @@ def _resolve_encoding(
         elif typing.get_origin(annotated_type) is list:
             return _resolve_array_encoding(annotated_type, annotation_args)
     elif _has_struct_data(attribute_type):
-        return _resolve_custom_encoding(attribute_type)
+        return _get_struct_data(attribute_type)
 
     assert False
+
+
+def _encode_native_list(l: list[Any], attributes: list[Any]) -> None:
+    attributes.extend(l)
 
 
 def _resolve_array_encoding(
@@ -238,8 +253,8 @@ def _resolve_array_encoding(
     inner_encoding = _resolve_encoding(inner_type)
     array_format = "".join([inner_encoding.format] * array_length)
 
-    inner_decode: Decoder[Any] = inner_encoding.decode
-    inner_encode: Encoder[Any] = inner_encoding.encode
+    inner_decode = inner_encoding.decode
+    inner_encode = inner_encoding.encode
 
     def _decode(attributes: Iterator[Any]) -> list[Any]:
         return [inner_decode(attributes) for _ in range(array_length)]
@@ -247,10 +262,7 @@ def _resolve_array_encoding(
     # Optimization: If the encoding function of the element is just inserting the raw element,
     # use a batch insert to speed things up.
     if inner_encode == _raw_insert:
-
-        def _encode(l: list[Any], attributes: list[Any]) -> None:
-            attributes.extend(l)
-
+        _encode = _encode_native_list
     else:
 
         def _encode(l: list[Any], attributes: list[Any]) -> None:
@@ -318,30 +330,10 @@ def _resolve_decimal_encoding(
     metadata: list[Any],
 ) -> CustomEncoding[Decimal]:
     for data in metadata:
-        if isinstance(data, _I80F48):
-            return CustomEncoding("16s", _decode_I80F48, _encode_I80F48)
+        if isinstance(data, CustomEncoding):
+            return data  # type: ignore
 
     raise TypeError("Cannot find decimal type annotation")
-
-
-# The last 6 bytes (== 6 * 8 == 48 bits) of the 16 byte value is the fractional part.
-# Therefore, divide by 2^48.
-I80F48_DIVISOR = Decimal(2**48)
-
-
-def _decode_I80F48(attributes: Iterator[Any]) -> Decimal:
-    return int.from_bytes(next(attributes), "little", signed=True) / I80F48_DIVISOR
-
-
-def _encode_I80F48(value: Decimal, attributes: list[Any]) -> None:
-    data = int(value * I80F48_DIVISOR).to_bytes(16, "little", signed=True)
-    attributes.append(data)
-
-
-def _resolve_custom_encoding(
-    cls: type[T],
-) -> _StructEncoding[T]:
-    return _get_struct_data(cls)
 
 
 def derive(*, byte_order: ByteOrder = "little") -> Callable[[type[T]], type[T]]:
@@ -354,8 +346,8 @@ def _derive(cls: type[T], byte_order: ByteOrder) -> type[T]:
 
     fields = dataclasses.fields(cls)
 
-    attribute_decoders: list[Optional[Decoder[Any]]] = []
-    attribute_encoders: list[Optional[Encoder[Any]]] = []
+    attribute_decoders: list[Decoder[Any]] = []
+    attribute_encoders: list[Encoder[Any]] = []
     full_format: str = ""
     for field in fields:
         encoding = _resolve_encoding(field.type)
@@ -368,10 +360,7 @@ def _derive(cls: type[T], byte_order: ByteOrder) -> type[T]:
 
     def _decode(raw_attributes: Iterator[Any]) -> T:
         attributes = [
-            decode_attribute(raw_attributes)
-            if decode_attribute is not None
-            else next(raw_attributes)
-            for decode_attribute in attribute_decoders
+            decode_attribute(raw_attributes) for decode_attribute in attribute_decoders
         ]
 
         return cls(*attributes)
@@ -379,10 +368,7 @@ def _derive(cls: type[T], byte_order: ByteOrder) -> type[T]:
     def _encode(value: T, raw_attributes: list[Any]) -> None:
         for encode_attribute, name in zip(attribute_encoders, attribute_names):
             attribute = getattr(value, name)
-            if encode_attribute is not None:
-                encode_attribute(attribute, raw_attributes)
-            else:
-                raw_attributes.append(attribute)
+            encode_attribute(attribute, raw_attributes)
 
     struct_data = _StructEncoding(
         format=full_format,
