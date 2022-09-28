@@ -2,6 +2,7 @@ from __future__ import annotations
 from io import BytesIO
 from typing import (
     Any,
+    Union,
     Generic,
     Iterator,
     TypeVar,
@@ -23,6 +24,7 @@ from decimal import Decimal
 # - Handle struct errors
 # - Allow variably sized list/bytes attribute at the end of a struct
 # - Test behaviour when using 'NewType'
+# - Parse multiple instances with iter_unpack
 
 
 __version__ = "0.1.0"
@@ -39,7 +41,11 @@ Encoder = Callable[[T, list[Any]], None]
 ByteOrder = Literal["big", "little"]
 
 
-class _StructData(Generic[T]):
+def _raw_insert(value: Any, attributes: list[Any]) -> None:
+    attributes.append(value)
+
+
+class _StructEncoding(Generic[T]):
     def __init__(
         self,
         format: str,
@@ -56,197 +62,52 @@ class _StructData(Generic[T]):
     @staticmethod
     def create_patched_data(
         size: int, decode: BytesDecoder[T], encode: BytesEncoder[T]
-    ) -> _StructData[T]:
-        return _StructData(
+    ) -> _StructEncoding[T]:
+        return _StructEncoding(
             format=f"{size}s",
             decode=lambda iterator: decode(next(iterator)),
             encode=lambda t, l: l.append(encode(t)),
         )
 
 
-_IntSize = Literal[8, 16, 32, 64, 128, 256]
+class CustomEncoding(Generic[T]):
+    def __init__(
+        self,
+        format: str,
+        decode: Decoder[T],
+        encode: Encoder[T],
+    ):
+        self.format = format
+        self.decode = decode
+        self.encode = encode
 
 
-class UnsignedInteger:
-    def __init__(self, size: _IntSize):
-        self.size = size
+class _NativeEncoding(Generic[T]):
+    def __init__(
+        self, format: str, decode: Decoder[T] = next, encode: Encoder[T] = _raw_insert
+    ):
+        self.format = format
+        self.decode = decode
+        self.encode = encode
 
 
-u8 = Annotated[int, UnsignedInteger(8)]
-u16 = Annotated[int, UnsignedInteger(16)]
-u32 = Annotated[int, UnsignedInteger(32)]
-u64 = Annotated[int, UnsignedInteger(64)]
-u128 = Annotated[int, UnsignedInteger(128)]
-u256 = Annotated[int, UnsignedInteger(256)]
-
-
-class SignedInteger:
-    def __init__(self, size: _IntSize):
-        self.size = size
-
-
-i8 = Annotated[int, SignedInteger(8)]
-i16 = Annotated[int, SignedInteger(16)]
-i32 = Annotated[int, SignedInteger(32)]
-i64 = Annotated[int, SignedInteger(64)]
-i128 = Annotated[int, SignedInteger(128)]
-i256 = Annotated[int, SignedInteger(256)]
-
-
-class Length:
-    def __init__(self, length: int):
-        assert length > 0
-
-        self.length = length
-
-
-class Size:
-    def __init__(self, size: int):
-        assert size > 0
-
-        self.size = size
-
-
-class _I80F48:
+class _IntEncoding(_NativeEncoding[int]):
     pass
 
 
-I80F48 = Annotated[Decimal, _I80F48()]
+Encoding = Union[_NativeEncoding[T], CustomEncoding[T], _StructEncoding[T]]
 
 
-def _resolve_parser(
-    attribute_type: Any,
-) -> tuple[str, Optional[Decoder[Any]], Optional[Encoder[Any]]]:
-    if isinstance(attribute_type, str):
-        raise Exception(
-            "Do not use 'from __future__ import annotation' in the same file in which 'binary.derive()' is used."
-        )
-
-    if attribute_type is bool:
-        return "?", None, None
-    elif typing.get_origin(attribute_type) is typing.Annotated:
-        annotated_type, *annotation_args = typing.get_args(attribute_type)
-
-        if annotated_type is int:
-            return _resolve_int_encoding(annotation_args)
-        elif issubclass(annotated_type, IntEnum):
-            return _resolve_int_enum_encoding(annotated_type, annotation_args)
-        elif annotated_type is str:
-            return _resolve_str_encoding(annotation_args)
-        elif annotated_type is bytes:
-            return _resolve_bytes_encoding(annotation_args)
-        elif annotated_type is Decimal:
-            return _resolve_decimal_encoding(annotation_args)
-        elif annotated_type is list:
-            raise TypeError("Inner type for list needed.")
-        elif typing.get_origin(annotated_type) is list:
-            return _resolve_array_encoding(annotated_type, annotation_args)
-    elif _has_struct_data(attribute_type):
-        return _resolve_custom_encoding(attribute_type)
-
-    assert False
+def _decode_str(attributes: Iterator[Any]) -> str:
+    value: bytes = next(attributes)
+    return value.rstrip(b"\0").decode("utf-8")
 
 
-def _resolve_array_encoding(
-    array_type: Any, metadata: list[Any]
-) -> tuple[str, Decoder[Any], Encoder[Any]]:
-    array_length = _resolve_array_length(metadata)
-
-    array_type_args = typing.get_args(array_type)
-    assert len(array_type_args) == 1
-    inner_type = array_type_args[0]
-
-    inner_format, inner_decode, inner_encode = _resolve_parser(inner_type)
-    array_format = "".join([inner_format] * array_length)
-
-    if inner_decode is None:
-        assert inner_encode is None
-
-        # If the array consists of simple, native elements, decode the complete array directly.
-
-        def _decode(attributes: Iterator[Any]) -> list[Any]:
-            return [next(attributes) for _ in range(array_length)]
-
-        def _encode(l: list[Any], attributes: list[Any]) -> None:
-            attributes.extend(l)
-
-    elif inner_encode is None:
-        assert inner_decode is not None
-
-        # If only the decoder must process the items
-
-        # Reassign to new variable to avoid type checking errors of inner_decode
-        # being None
-        _inner_decode = inner_decode
-
-        def _decode(attributes: Iterator[Any]) -> list[Any]:
-            return [_inner_decode(attributes) for _ in range(array_length)]
-
-        def _encode(l: list[Any], attributes: list[Any]) -> None:
-            attributes.extend(l)
-
-    else:
-        assert inner_decode is not None
-        assert inner_encode is not None
-
-        # Reassign to new variable to avoid type checking errors of inner_decode
-        # being None
-        _inner_decode = inner_decode
-
-        def _decode(attributes: Iterator[Any]) -> list[Any]:
-            return [_inner_decode(attributes) for _ in range(array_length)]
-
-        def _encode(l: list[Any], attributes: list[Any]) -> None:
-            for item in l:
-                inner_encode(item, attributes)
-
-    return array_format, _decode, _encode
-
-
-def _resolve_array_length(metadata: list[Any]) -> int:
-    for data in metadata:
-        if isinstance(data, Length):
-            return data.length
-
-    raise TypeError("Cannot find length annotation for list")
-
-
-def _resolve_int_encoding(
-    metadata: list[Any],
-) -> tuple[str, Optional[Decoder[int]], Optional[Encoder[int]]]:
-    for data in metadata:
-        if isinstance(data, UnsignedInteger):
-            if data.size == 8:
-                return "B", None, None
-            elif data.size == 16:
-                return "H", None, None
-            elif data.size == 32:
-                return "I", None, None
-            elif data.size == 64:
-                return "Q", None, None
-            elif data.size == 128:
-                return "16s", _decode_uint, _encode_uint128
-            elif data.size == 256:
-                return "32s", _decode_uint, _encode_uint256
-            else:
-                assert False
-        elif isinstance(data, SignedInteger):
-            if data.size == 8:
-                return "b", None, None
-            elif data.size == 16:
-                return "h", None, None
-            elif data.size == 32:
-                return "i", None, None
-            elif data.size == 64:
-                return "q", None, None
-            elif data.size == 128:
-                return "16s", _decode_int, _encode_int128
-            elif data.size == 256:
-                return "32s", _decode_int, _encode_int256
-            else:
-                assert False
-
-    raise TypeError("Cannot find integer type annotation")
+def _encode_str(value: str, attributes: list[Any]) -> None:
+    # The `struct` library automatically adds zeros to the end of
+    # the encoded string to fill the necessary `data.size` bytes.
+    data = value.encode("utf-8")
+    attributes.append(data)
 
 
 def _decode_uint(attributes: Iterator[Any]) -> int:
@@ -277,77 +138,188 @@ def _encode_int256(value: int, attributes: list[Any]) -> None:
     attributes.append(data)
 
 
+class Encodings:
+    bool: _NativeEncoding[bool] = _NativeEncoding(format="?")
+
+    u8 = _IntEncoding(format="B")
+    u16 = _IntEncoding(format="H")
+    u32 = _IntEncoding(format="I")
+    u64 = _IntEncoding(format="Q")
+    u128 = _IntEncoding(format="16s", decode=_decode_uint, encode=_encode_uint128)
+    u256 = _IntEncoding(format="32s", decode=_decode_uint, encode=_encode_uint256)
+
+    i8 = _IntEncoding(format="b")
+    i16 = _IntEncoding(format="h")
+    i32 = _IntEncoding(format="i")
+    i64 = _IntEncoding(format="q")
+    i128 = _IntEncoding(format="16s", decode=_decode_int, encode=_encode_int128)
+    i256 = _IntEncoding(format="32s", decode=_decode_int, encode=_encode_int256)
+
+
+u8 = Annotated[int, Encodings.u8]
+u16 = Annotated[int, Encodings.u16]
+u32 = Annotated[int, Encodings.u32]
+u64 = Annotated[int, Encodings.u64]
+u128 = Annotated[int, Encodings.u128]
+u256 = Annotated[int, Encodings.u256]
+
+
+i8 = Annotated[int, Encodings.i8]
+i16 = Annotated[int, Encodings.i16]
+i32 = Annotated[int, Encodings.i32]
+i64 = Annotated[int, Encodings.i64]
+i128 = Annotated[int, Encodings.i128]
+i256 = Annotated[int, Encodings.i256]
+
+
+class Length:
+    def __init__(self, length: int):
+        assert length > 0
+
+        self.length = length
+
+
+class Size:
+    def __init__(self, size: int):
+        assert size > 0
+
+        self.size = size
+
+
+class _I80F48:
+    pass
+
+
+I80F48 = Annotated[Decimal, _I80F48()]
+
+
+def _resolve_encoding(
+    attribute_type: Any,
+) -> Encoding[Any]:
+    if isinstance(attribute_type, str):
+        raise Exception(
+            "Do not use 'from __future__ import annotation' in the same file in which 'binary.derive()' is used."
+        )
+
+    if attribute_type is bool:
+        return Encodings.bool
+    elif typing.get_origin(attribute_type) is typing.Annotated:
+        annotated_type, *annotation_args = typing.get_args(attribute_type)
+
+        if annotated_type is int:
+            return _resolve_int_encoding(annotation_args)
+        elif issubclass(annotated_type, IntEnum):
+            return _resolve_int_enum_encoding(annotated_type, annotation_args)
+        elif annotated_type is str:
+            return _resolve_str_encoding(annotation_args)
+        elif annotated_type is bytes:
+            return _resolve_bytes_encoding(annotation_args)
+        elif annotated_type is Decimal:
+            return _resolve_decimal_encoding(annotation_args)
+        elif annotated_type is list:
+            raise TypeError("Inner type for list needed.")
+        elif typing.get_origin(annotated_type) is list:
+            return _resolve_array_encoding(annotated_type, annotation_args)
+    elif _has_struct_data(attribute_type):
+        return _resolve_custom_encoding(attribute_type)
+
+    assert False
+
+
+def _resolve_array_encoding(
+    array_type: Any, metadata: list[Any]
+) -> CustomEncoding[list[Any]]:
+    array_length = _resolve_array_length(metadata)
+
+    array_type_args = typing.get_args(array_type)
+    assert len(array_type_args) == 1
+    inner_type = array_type_args[0]
+
+    inner_encoding = _resolve_encoding(inner_type)
+    array_format = "".join([inner_encoding.format] * array_length)
+
+    inner_decode: Decoder[Any] = inner_encoding.decode
+    inner_encode: Encoder[Any] = inner_encoding.encode
+
+    def _decode(attributes: Iterator[Any]) -> list[Any]:
+        return [inner_decode(attributes) for _ in range(array_length)]
+
+    # Optimization: If the encoding function of the element is just inserting the raw element,
+    # use a batch insert to speed things up.
+    if inner_encode == _raw_insert:
+
+        def _encode(l: list[Any], attributes: list[Any]) -> None:
+            attributes.extend(l)
+
+    else:
+
+        def _encode(l: list[Any], attributes: list[Any]) -> None:
+            for item in l:
+                inner_encode(item, attributes)
+
+    return CustomEncoding(array_format, _decode, _encode)
+
+
+def _resolve_array_length(metadata: list[Any]) -> int:
+    for data in metadata:
+        if isinstance(data, Length):
+            return data.length
+
+    raise TypeError("Cannot find length annotation for list")
+
+
+def _resolve_int_encoding(
+    metadata: list[Any],
+) -> _IntEncoding:
+    for data in metadata:
+        if isinstance(data, _IntEncoding):
+            return data
+
+    raise TypeError("Cannot find integer type annotation")
+
+
 def _resolve_int_enum_encoding(
     cls: Callable[[int], IntEnum], metadata: list[Any]
-) -> tuple[str, Decoder[IntEnum], Optional[Encoder[IntEnum]]]:
+) -> CustomEncoding[IntEnum]:
     for data in metadata:
-        if isinstance(data, UnsignedInteger):
-            if data.size == 8:
-                return "B", lambda a: cls(next(a)), None
-            elif data.size == 16:
-                return "H", lambda a: cls(next(a)), None
-            elif data.size == 32:
-                return "I", lambda a: cls(next(a)), None
-            elif data.size == 64:
-                return "Q", lambda a: cls(next(a)), None
-            elif data.size == 128:
-
-                def _decode_cls(attributes: Iterator[Any]) -> IntEnum:
-                    return cls(_decode_uint(attributes))
-
-                return "16s", _decode_cls, _encode_uint128
-            elif data.size == 256:
-
-                def _decode_cls(attributes: Iterator[Any]) -> IntEnum:
-                    return cls(_decode_uint(attributes))
-
-                return "32s", _decode_cls, _encode_uint256
-            else:
-                assert False
+        if isinstance(data, _IntEncoding):
+            return CustomEncoding(
+                format=data.format,
+                decode=lambda a: cls(data.decode(a)),
+                encode=data.encode,
+            )
 
     raise TypeError("Cannot find integer type annotation")
 
 
 def _resolve_str_encoding(
     metadata: list[Any],
-) -> tuple[str, Decoder[str], Encoder[str]]:
+) -> _NativeEncoding[str]:
     for data in metadata:
         if isinstance(data, Size):
-            return (
-                f"{data.size}s",
-                _decode_str,
-                _encode_str,
+            return _NativeEncoding(
+                format=f"{data.size}s",
+                decode=_decode_str,
+                encode=_encode_str,
             )
 
     raise TypeError("Cannot find string type annotation")
 
 
-def _decode_str(attributes: Iterator[Any]) -> str:
-    value: bytes = next(attributes)
-    return value.rstrip(b"\0").decode("utf-8")
-
-
-def _encode_str(value: str, attributes: list[Any]) -> None:
-    # The `struct` library automatically adds zeros to the end of
-    # the encoded string to fill the necessary `data.size` bytes.
-    data = value.encode("utf-8")
-    attributes.append(data)
-
-
-def _resolve_bytes_encoding(metadata: list[Any]) -> tuple[str, None, None]:
+def _resolve_bytes_encoding(metadata: list[Any]) -> _NativeEncoding[bytes]:
     for data in metadata:
         if isinstance(data, Size):
-            return f"{data.size}s", None, None
+            return _NativeEncoding(format=f"{data.size}s")
 
     raise TypeError("Cannot find bytes type annotation")
 
 
 def _resolve_decimal_encoding(
     metadata: list[Any],
-) -> tuple[str, Decoder[Decimal], Encoder[Decimal]]:
+) -> CustomEncoding[Decimal]:
     for data in metadata:
         if isinstance(data, _I80F48):
-            return "16s", _decode_I80F48, _encode_I80F48
+            return CustomEncoding("16s", _decode_I80F48, _encode_I80F48)
 
     raise TypeError("Cannot find decimal type annotation")
 
@@ -368,12 +340,8 @@ def _encode_I80F48(value: Decimal, attributes: list[Any]) -> None:
 
 def _resolve_custom_encoding(
     cls: type[T],
-) -> tuple[str, Decoder[T], Encoder[T]]:
-    struct_data = _get_struct_data(cls)
-
-    return struct_data.format, struct_data.decode, struct_data.encode
-
-    # return f"{struct_data.size}s", struct_data.decode, struct_data.encode
+) -> _StructEncoding[T]:
+    return _get_struct_data(cls)
 
 
 def derive(*, byte_order: ByteOrder = "little") -> Callable[[type[T]], type[T]]:
@@ -388,13 +356,13 @@ def _derive(cls: type[T], byte_order: ByteOrder) -> type[T]:
 
     attribute_decoders: list[Optional[Decoder[Any]]] = []
     attribute_encoders: list[Optional[Encoder[Any]]] = []
-    full_format = ""
+    full_format: str = ""
     for field in fields:
-        format, decoder, encoder = _resolve_parser(field.type)
+        encoding = _resolve_encoding(field.type)
 
-        full_format += format
-        attribute_decoders.append(decoder)
-        attribute_encoders.append(encoder)
+        full_format += encoding.format
+        attribute_decoders.append(encoding.decode)
+        attribute_encoders.append(encoding.encode)
 
     attribute_names = [field.name for field in fields]
 
@@ -416,7 +384,7 @@ def _derive(cls: type[T], byte_order: ByteOrder) -> type[T]:
             else:
                 raw_attributes.append(attribute)
 
-    struct_data = _StructData(
+    struct_data = _StructEncoding(
         format=full_format,
         decode=_decode,
         encode=_encode,
@@ -429,7 +397,7 @@ def _derive(cls: type[T], byte_order: ByteOrder) -> type[T]:
 def patch(
     cls: type[T], size: int, decode: BytesDecoder[T], encode: BytesEncoder[T]
 ) -> None:
-    struct_data = _StructData.create_patched_data(size, decode, encode)
+    struct_data = _StructEncoding.create_patched_data(size, decode, encode)
     _set_struct_data(cls, struct_data)
 
 
@@ -480,11 +448,11 @@ def get_size(cls: Any) -> int:
     return struct_data.size
 
 
-def _get_struct_data(cls: type[T]) -> _StructData[T]:
+def _get_struct_data(cls: type[T]) -> _StructEncoding[T]:
     return getattr(cls, "__bstruct_data")
 
 
-def _set_struct_data(cls: type[T], data: _StructData[T]) -> None:
+def _set_struct_data(cls: type[T], data: _StructEncoding[T]) -> None:
     setattr(cls, "__bstruct_data", data)
 
 

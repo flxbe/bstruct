@@ -16,9 +16,7 @@ def test_should_encode_bool_values() -> None:
     original = TestData(v1=True, v2=False)
 
     data = bstruct.encode(original)
-    print(data)
     decoded = bstruct.decode(TestData, data)
-    print(decoded)
 
     assert decoded == original
 
@@ -69,18 +67,18 @@ def test_should_encode_int_enums() -> None:
     @bstruct.derive()
     @dataclass
     class TestData:
-        a8: Annotated[TestEnum, bstruct.UnsignedInteger(8)]
-        b8: Annotated[TestEnum, bstruct.UnsignedInteger(8)]
-        a16: Annotated[TestEnum, bstruct.UnsignedInteger(16)]
-        b16: Annotated[TestEnum, bstruct.UnsignedInteger(16)]
-        a32: Annotated[TestEnum, bstruct.UnsignedInteger(32)]
-        b32: Annotated[TestEnum, bstruct.UnsignedInteger(32)]
-        a64: Annotated[TestEnum, bstruct.UnsignedInteger(64)]
-        b64: Annotated[TestEnum, bstruct.UnsignedInteger(64)]
-        a128: Annotated[TestEnum, bstruct.UnsignedInteger(128)]
-        b128: Annotated[TestEnum, bstruct.UnsignedInteger(128)]
-        a256: Annotated[TestEnum, bstruct.UnsignedInteger(256)]
-        b256: Annotated[TestEnum, bstruct.UnsignedInteger(256)]
+        a8: Annotated[TestEnum, bstruct.Encodings.u8]
+        b8: Annotated[TestEnum, bstruct.Encodings.i8]
+        a16: Annotated[TestEnum, bstruct.Encodings.u16]
+        b16: Annotated[TestEnum, bstruct.Encodings.i16]
+        a32: Annotated[TestEnum, bstruct.Encodings.u32]
+        b32: Annotated[TestEnum, bstruct.Encodings.i32]
+        a64: Annotated[TestEnum, bstruct.Encodings.u64]
+        b64: Annotated[TestEnum, bstruct.Encodings.i64]
+        a128: Annotated[TestEnum, bstruct.Encodings.u128]
+        b128: Annotated[TestEnum, bstruct.Encodings.i128]
+        a256: Annotated[TestEnum, bstruct.Encodings.u256]
+        b256: Annotated[TestEnum, bstruct.Encodings.i256]
 
     original = TestData(
         a8=TestEnum.A,
