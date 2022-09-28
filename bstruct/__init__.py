@@ -231,8 +231,8 @@ def _resolve_encoding(
             raise TypeError("Inner type for list needed.")
         elif typing.get_origin(annotated_type) is list:
             return _resolve_array_encoding(annotated_type, annotation_args)
-    elif _has_struct_data(attribute_type):
-        return _get_struct_data(attribute_type)
+    elif _has_struct_encoding(attribute_type):
+        return _get_struct_encoding(attribute_type)
 
     assert False
 
@@ -370,12 +370,12 @@ def _derive(cls: type[T], byte_order: ByteOrder) -> type[T]:
             attribute = getattr(value, name)
             encode_attribute(attribute, raw_attributes)
 
-    struct_data = _StructEncoding(
+    encoding = _StructEncoding(
         format=full_format,
         decode=_decode,
         encode=_encode,
     )
-    _set_struct_data(cls, struct_data)
+    _set_struct_encoding(cls, encoding)
 
     return cls
 
@@ -383,37 +383,32 @@ def _derive(cls: type[T], byte_order: ByteOrder) -> type[T]:
 def patch(
     cls: type[T], size: int, decode: BytesDecoder[T], encode: BytesEncoder[T]
 ) -> None:
-    struct_data = _StructEncoding.create_patched_data(size, decode, encode)
-    _set_struct_data(cls, struct_data)
+    encoding = _StructEncoding.create_patched_data(size, decode, encode)
+    _set_struct_encoding(cls, encoding)
 
 
 def decode(cls: type[T], data: bytes, strict: bool = True) -> T:
-    struct_data = _get_struct_data(cls)
+    encoding = _get_struct_encoding(cls)
 
     if not strict:
-        data = data[: struct_data.size]
+        data = data[: encoding.size]
 
     try:
-        raw_attributes = struct_data.struct.unpack(data)
-        return struct_data.decode(iter(raw_attributes))
+        raw_attributes = encoding.struct.unpack(data)
+        return encoding.decode(iter(raw_attributes))
     except StructError:
         # TODO: Handle
         raise
 
 
-def get_struct(cls: Any) -> Struct:
-    struct_data = _get_struct_data(cls)
-    return struct_data.struct
-
-
 def decode_from(cls: type[T], data_stream: BytesIO) -> T:
-    struct_data = _get_struct_data(cls)
+    encoding = _get_struct_encoding(cls)
 
-    data = data_stream.read(struct_data.size)
+    data = data_stream.read(encoding.size)
 
     try:
-        raw_attributes = struct_data.struct.unpack(data)
-        return struct_data.decode(iter(raw_attributes))
+        raw_attributes = encoding.struct.unpack(data)
+        return encoding.decode(iter(raw_attributes))
     except StructError:
         # TODO: Handle
         raise
@@ -421,26 +416,31 @@ def decode_from(cls: type[T], data_stream: BytesIO) -> T:
 
 def encode(value: Any) -> bytes:
     cls = type(value)
-    struct_data = _get_struct_data(cls)
+    encoding = _get_struct_encoding(cls)
 
     raw_attributes: list[Any] = []
-    struct_data.encode(value, raw_attributes)
+    encoding.encode(value, raw_attributes)
 
-    return struct_data.struct.pack(*raw_attributes)
+    return encoding.struct.pack(*raw_attributes)
+
+
+def get_struct(cls: Any) -> Struct:
+    encoding = _get_struct_encoding(cls)
+    return encoding.struct
 
 
 def get_size(cls: Any) -> int:
-    struct_data = _get_struct_data(cls)
-    return struct_data.size
+    encoding = _get_struct_encoding(cls)
+    return encoding.size
 
 
-def _get_struct_data(cls: type[T]) -> _StructEncoding[T]:
-    return getattr(cls, "__bstruct_data")
+def _get_struct_encoding(cls: type[T]) -> _StructEncoding[T]:
+    return getattr(cls, "__bstruct_encoding")
 
 
-def _set_struct_data(cls: type[T], data: _StructEncoding[T]) -> None:
-    setattr(cls, "__bstruct_data", data)
+def _set_struct_encoding(cls: type[T], data: _StructEncoding[T]) -> None:
+    setattr(cls, "__bstruct_encoding", data)
 
 
-def _has_struct_data(cls: Any) -> bool:
-    return hasattr(cls, "__bstruct_data")
+def _has_struct_encoding(cls: Any) -> bool:
+    return hasattr(cls, "__bstruct_encoding")
