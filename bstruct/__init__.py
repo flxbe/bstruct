@@ -82,12 +82,10 @@ class CustomEncoding(Generic[T]):
 
 
 class _NativeEncoding(Generic[T]):
-    def __init__(
-        self, format: str, decode: Decoder[T] = next, encode: Encoder[T] = _raw_insert
-    ):
+    def __init__(self, format: str):
         self.format = format
-        self.decode = decode
-        self.encode = encode
+        self.decode = next
+        self.encode = _raw_insert
 
 
 class _IntEncoding(_NativeEncoding[int]):
@@ -158,19 +156,32 @@ class Encodings:
     u16 = _IntEncoding(format="H")
     u32 = _IntEncoding(format="I")
     u64 = _IntEncoding(format="Q")
-    u128 = _IntEncoding(format="16s", decode=_decode_uint, encode=_encode_uint128)
-    u256 = _IntEncoding(format="32s", decode=_decode_uint, encode=_encode_uint256)
+    u128: CustomEncoding[int] = CustomEncoding(
+        format="16s", decode=_decode_uint, encode=_encode_uint128
+    )
+    u256: CustomEncoding[int] = CustomEncoding(
+        format="32s", decode=_decode_uint, encode=_encode_uint256
+    )
 
     i8 = _IntEncoding(format="b")
     i16 = _IntEncoding(format="h")
     i32 = _IntEncoding(format="i")
     i64 = _IntEncoding(format="q")
-    i128 = _IntEncoding(format="16s", decode=_decode_int, encode=_encode_int128)
-    i256 = _IntEncoding(format="32s", decode=_decode_int, encode=_encode_int256)
+    i128: CustomEncoding[int] = CustomEncoding(
+        format="16s", decode=_decode_int, encode=_encode_int128
+    )
+    i256: CustomEncoding[int] = CustomEncoding(
+        format="32s", decode=_decode_int, encode=_encode_int256
+    )
 
     I80F48: CustomEncoding[Decimal] = CustomEncoding(
         "16s", _decode_I80F48, _encode_I80F48
     )
+
+    @staticmethod
+    def bytes(size: int) -> _NativeEncoding[bytes]:
+        assert size > 0
+        return _NativeEncoding(format=f"{size}s")
 
 
 u8 = Annotated[int, Encodings.u8]
@@ -282,9 +293,10 @@ def _resolve_array_length(metadata: list[Any]) -> int:
 
 def _resolve_int_encoding(
     metadata: list[Any],
-) -> _IntEncoding:
+) -> Encoding[int]:
     for data in metadata:
-        if isinstance(data, _IntEncoding):
+        if isinstance(data, (_IntEncoding, CustomEncoding)):
+            data: Encoding[int] = data
             return data
 
     raise TypeError("Cannot find integer type annotation")
@@ -294,7 +306,9 @@ def _resolve_int_enum_encoding(
     cls: Callable[[int], IntEnum], metadata: list[Any]
 ) -> CustomEncoding[IntEnum]:
     for data in metadata:
-        if isinstance(data, _IntEncoding):
+        if isinstance(data, (_IntEncoding, CustomEncoding)):
+            data: Encoding[int] = data
+
             return CustomEncoding(
                 format=data.format,
                 decode=lambda a: cls(data.decode(a)),
@@ -304,12 +318,10 @@ def _resolve_int_enum_encoding(
     raise TypeError("Cannot find integer type annotation")
 
 
-def _resolve_str_encoding(
-    metadata: list[Any],
-) -> _NativeEncoding[str]:
+def _resolve_str_encoding(metadata: list[Any]) -> CustomEncoding[str]:
     for data in metadata:
         if isinstance(data, Size):
-            return _NativeEncoding(
+            return CustomEncoding(
                 format=f"{data.size}s",
                 decode=_decode_str,
                 encode=_encode_str,
@@ -378,6 +390,10 @@ def _derive(cls: type[T], byte_order: ByteOrder) -> type[T]:
     _set_struct_encoding(cls, encoding)
 
     return cls
+
+
+def compile_format(fields: list[_NativeEncoding[Any]]) -> str:
+    return "".join([field.format for field in fields])
 
 
 def patch(
