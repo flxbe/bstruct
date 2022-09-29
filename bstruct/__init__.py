@@ -2,6 +2,7 @@ from __future__ import annotations
 from io import BytesIO
 from typing import (
     Any,
+    NewType,
     Union,
     Generic,
     Iterator,
@@ -10,6 +11,7 @@ from typing import (
     Literal,
     Annotated,
 )
+import inspect
 import typing
 import dataclasses
 from enum import IntEnum
@@ -21,8 +23,6 @@ from decimal import Decimal
 # - add support for different byte orders
 # - create Benchmark with different implementations
 # - Handle struct errors
-# - Allow variably sized list/bytes attribute at the end of a struct
-# - Test behaviour when using 'NewType'
 
 
 __version__ = "0.1.0"
@@ -228,19 +228,21 @@ def _resolve_encoding(
         annotated_type, *annotation_args = typing.get_args(attribute_type)
 
         if annotated_type is int:
-            return _resolve_int_encoding(annotation_args)
-        elif issubclass(annotated_type, IntEnum):
+            return _resolve_simple_encoding(annotation_args)
+        elif inspect.isclass(annotated_type) and issubclass(annotated_type, IntEnum):
             return _resolve_int_enum_encoding(annotated_type, annotation_args)
         elif annotated_type is str:
             return _resolve_str_encoding(annotation_args)
         elif annotated_type is bytes:
             return _resolve_bytes_encoding(annotation_args)
         elif annotated_type is Decimal:
-            return _resolve_decimal_encoding(annotation_args)
+            return _resolve_simple_encoding(annotation_args)
         elif annotated_type is list:
             raise TypeError("Inner type for list needed.")
         elif typing.get_origin(annotated_type) is list:
             return _resolve_array_encoding(annotated_type, annotation_args)
+        elif type(annotated_type) is NewType:
+            return _resolve_simple_encoding(annotation_args)
     elif _has_struct_encoding(attribute_type):
         return _get_struct_encoding(attribute_type)
 
@@ -290,29 +292,23 @@ def _resolve_array_length(metadata: list[Any]) -> int:
     raise TypeError("Cannot find length annotation for list")
 
 
-def _resolve_int_encoding(
-    metadata: list[Any],
-) -> Encoding[int]:
-    for data in metadata:
-        if isinstance(data, (_IntEncoding, CustomEncoding)):
-            data: Encoding[int] = data
-            return data
-
-    raise TypeError("Cannot find integer type annotation")
-
-
 def _resolve_int_enum_encoding(
     cls: Callable[[int], IntEnum], metadata: list[Any]
 ) -> CustomEncoding[IntEnum]:
+    inner_encoding: Encoding[int] = _resolve_simple_encoding(metadata)
+
+    return CustomEncoding(
+        format=inner_encoding.format,
+        decode=lambda a: cls(inner_encoding.decode(a)),
+        encode=inner_encoding.encode,
+    )
+
+
+def _resolve_simple_encoding(metadata: list[Any]) -> Encoding[Any]:
     for data in metadata:
         if isinstance(data, (_IntEncoding, CustomEncoding)):
-            data: Encoding[int] = data
-
-            return CustomEncoding(
-                format=data.format,
-                decode=lambda a: cls(data.decode(a)),
-                encode=data.encode,
-            )
+            data: Encoding[Any] = data
+            return data
 
     raise TypeError("Cannot find integer type annotation")
 
@@ -335,16 +331,6 @@ def _resolve_bytes_encoding(metadata: list[Any]) -> _NativeEncoding[bytes]:
             return _NativeEncoding(format=f"{data.size}s")
 
     raise TypeError("Cannot find bytes type annotation")
-
-
-def _resolve_decimal_encoding(
-    metadata: list[Any],
-) -> CustomEncoding[Decimal]:
-    for data in metadata:
-        if isinstance(data, CustomEncoding):
-            return data  # type: ignore
-
-    raise TypeError("Cannot find decimal type annotation")
 
 
 def derive(*, byte_order: ByteOrder = "little") -> Callable[[type[T]], type[T]]:
