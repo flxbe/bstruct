@@ -23,7 +23,6 @@ from decimal import Decimal
 # - Handle struct errors
 # - Allow variably sized list/bytes attribute at the end of a struct
 # - Test behaviour when using 'NewType'
-# - Parse multiple instances with iter_unpack
 
 
 __version__ = "0.1.0"
@@ -412,6 +411,19 @@ def decode(cls: type[T], data: bytes, strict: bool = True) -> T:
     try:
         raw_attributes = encoding.struct.unpack(data)
         return encoding.decode(iter(raw_attributes))
+    except StructError:
+        # TODO: Handle
+        raise
+
+
+def decode_all(cls: type[T], data: bytes) -> Iterator[T]:
+    encoding = _get_struct_encoding(cls)
+
+    try:
+        iterator = encoding.struct.iter_unpack(data)
+
+        for raw_attributes in iterator:
+            yield encoding.decode(iter(raw_attributes))
     except StructError:
         # TODO: Handle
         raise

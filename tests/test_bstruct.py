@@ -217,3 +217,26 @@ def test_should_encode_arrays() -> None:
     decoded = bstruct.decode(TestData, data)
 
     assert decoded == original
+
+
+def test_should_unpack_multiple_instances() -> None:
+    @bstruct.derive()
+    @dataclass
+    class TestData:
+        value: bstruct.u8
+
+    original_1 = TestData(1)
+    original_2 = TestData(2)
+    original_3 = TestData(3)
+
+    data = (
+        bstruct.encode(original_1)
+        + bstruct.encode(original_2)
+        + bstruct.encode(original_3)
+    )
+
+    decoded_1, decoded_2, decoded_3 = list(bstruct.decode_all(TestData, data))
+
+    assert decoded_1 == original_1
+    assert decoded_2 == original_2
+    assert decoded_3 == original_3
