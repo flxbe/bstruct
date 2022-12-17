@@ -5,7 +5,7 @@ description = "Create efficient encoders and decoders for binary data using type
 authors = ["flxbe <flxbe@mailbox.org>"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1"
