@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bstruct"
-version = "0.1.0"
+version = "0.2.0"
 description = "Create efficient encoders and decoders for binary data using type annotations."
 authors = ["flxbe <flxbe@mailbox.org>"]
 
