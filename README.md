@@ -1,6 +1,6 @@
 # bstruct
 
-Create encoders and decoders for binary data using type annotations.
+Declaratively create encoders and decoders for binary data using type annotations.
 The goal is to strike a sensible balance between usability and efficiency
 while allowing easy fallback to Python's built-in `struct` library for maximum performance.
 
@@ -34,8 +34,6 @@ assert decoded == data
 
 The helper type `bstruct.u8` is just an annotated int: `Annotated[int, Encodings.u8]`.
 As a result, `bstruct` simply returns native types.
-
-## How Does It Work
 
 ### Supported Types
 
@@ -147,7 +145,7 @@ struct.Struct(f"<{format_str}")
 
 ## Benchmarks
 
-Please see the source of the benchmarks in `benchmarks` directory.
+Please see the source of the benchmarks in the `benchmarks` directory.
 Feel free to create an issue or PR should there be a problem with the methodology.
 The benchmarks where executed using Python 3.10.4 on a MacBook Pro 2018 with a 2.3GHz i5 processor.
 
