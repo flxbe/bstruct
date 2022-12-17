@@ -151,23 +151,25 @@ struct.Struct(f"<{format_str}")
 
 Please see the source of the benchmarks in the `benchmarks` directory.
 Feel free to create an issue or PR should there be a problem with the methodology.
-The benchmarks where executed using Python 3.10.4 on a MacBook Pro 2018 with a 2.3GHz i5 processor.
+The benchmarks where executed using Python 3.11.1 and
+[construct](https://pypi.org/project/construct/) 2.10.68
+on a MacBook Pro 2018 with a 2.3GHz i5 processor.
 
 ### `benchmarks/builtins.py`
 
 | Name                 | decode   | encode   |
 | -------------------- | -------- | -------- |
-| bstruct              | 2.57 us  | 2.29 us  |
-| struct               | 0.94 us  | 0.30 us  |
-| construct            | 28.08 us | 25.58 us |
-| construct (compiled) | 27.65 us | 25.63 us |
+| bstruct              | 1.97 us  | 1.67 us  |
+| struct               | 0.62 us  | 0.23 us  |
+| construct            | 23.10 us | 22.11 us |
+| construct (compiled) | 24.90 us | 25.43 us |
 
 ### `benchmarks/lists.py`
 
 | Name                     | decode   | encode    |
 | ------------------------ | -------- | --------- |
-| bstruct (native items)   | 2.26 us  | 1.30 us   |
-| bstruct (class items)    | 8.64 us  | 6.20 us   |
-| struct (native items)    | 0.25 us  | 0.38 us   |
-| construct (native items) | 20.25 us | 19.49 us  |
-| construct (class items)  | 97.84 us | 105.71 us |
+| bstruct (native items)   | 1.85 us  | 1.03 us   |
+| bstruct (class items)    | 7.88 us  | 5.69 us   |
+| struct (native items)    | 0.20 us  | 0.35 us   |
+| construct (native items) | 17.66 us | 17.34 us  |
+| construct (class items)  | 98.07 us | 100.76 us |
