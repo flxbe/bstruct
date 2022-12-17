@@ -12,6 +12,10 @@ Use at your own risk.
 
 ## Getting Started
 
+```bash
+pip install bstruct
+```
+
 ```python
 from dataclasses import dataclass
 
