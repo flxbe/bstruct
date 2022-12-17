@@ -37,7 +37,7 @@ assert decoded == data
 ```
 
 The helper type `bstruct.u8` is just an annotated int: `Annotated[int, Encodings.u8]`.
-As a result, `bstruct` simply returns native types.
+As a result, the attribute `b` is just a native `int`.
 
 ### Supported Types
 
