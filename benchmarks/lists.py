@@ -33,14 +33,14 @@ def _decode_native_list() -> None:
     bstruct.decode(NativeList, native_list_data)
 
 
-_measure_and_print("decode: native_list", _decode_native_list)
+_measure_and_print("bstruct: decode (native items)", _decode_native_list)
 
 
 def _encode_native_list() -> None:
     bstruct.encode(native_list)
 
 
-_measure_and_print("encode: native_list", _encode_native_list)
+_measure_and_print("bstruct: encode (native items)", _encode_native_list)
 
 
 @bstruct.derive()
@@ -78,28 +78,28 @@ def _decode_class_list() -> None:
     bstruct.decode(ClassList, class_list_data)
 
 
-_measure_and_print("decode: class_list", _decode_class_list)
+_measure_and_print("bstruct: decode (class items)", _decode_class_list)
 
 
 def _encode_class_list() -> None:
     bstruct.encode(class_list)
 
 
-_measure_and_print("encode: class_list", _encode_class_list)
+_measure_and_print("bstruct: encode (class items)", _encode_class_list)
 
 
 raw_struct = bstruct.get_struct(ClassList)
-raw_list = (1, 2, 3, 4, 5, 6, 7, 8, 9, 0)
+raw_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
 
 
 def _decode_raw_list() -> tuple[int]:
     return raw_struct.unpack(class_list_data)
 
 
-assert _decode_raw_list() == raw_list
+assert list(_decode_raw_list()) == raw_list
 
 
-_measure_and_print("decode: raw_list", _decode_raw_list)
+_measure_and_print("struct: decode", _decode_raw_list)
 
 
 def _encode_raw_list() -> bytes:
@@ -109,27 +109,46 @@ def _encode_raw_list() -> bytes:
 assert _encode_raw_list() == class_list_data
 
 
-_measure_and_print("encode: raw_list", _encode_raw_list)
+_measure_and_print("struct: encode", _encode_raw_list)
+
+
+NativeConstructList = construct.Struct(
+    "values" / construct.Array(10, construct.Int8ul),
+)
+
+
+def _decode_native_construct_list() -> construct.Container:
+    return NativeConstructList.parse(native_list_data)  # type: ignore
+
+
+_measure_and_print("construct: decode (native items)", _decode_native_construct_list)
+
+
+def _encode_native_construct_list() -> bytes:
+    return NativeConstructList.build({"values": raw_list})  # type: ignore
+
+
+_measure_and_print("construct: encode (native items)", _encode_native_construct_list)
 
 
 ConstructItem = construct.Struct(
     "a" / construct.Int8ul,  # type: ignore
 )
 
-ConstructClass = construct.Struct(
+ConstructList = construct.Struct(
     "values" / construct.Array(10, ConstructItem),
 )
 
 
 def _decode_construct_list() -> construct.Container:
-    return ConstructClass.parse(class_list_data)  # type: ignore
+    return ConstructList.parse(class_list_data)  # type: ignore
 
 
-_measure_and_print("decode: construct_list", _decode_construct_list)
+_measure_and_print("construct: decode (class items)", _decode_construct_list)
 
 
 def _encode_construct_list() -> bytes:
-    return ConstructClass.build(  # type: ignore
+    return ConstructList.build(  # type: ignore
         {
             "values": [
                 {"a": 1},
@@ -147,4 +166,4 @@ def _encode_construct_list() -> bytes:
     )
 
 
-_measure_and_print("encode: construct_list", _encode_construct_list)
+_measure_and_print("construct: encode (class items)", _encode_construct_list)

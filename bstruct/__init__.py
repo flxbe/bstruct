@@ -19,12 +19,6 @@ from struct import Struct, error as StructError
 from decimal import Decimal
 
 
-# TODO:
-# - add support for different byte orders
-# - create Benchmark with different implementations
-# - Handle struct errors
-
-
 __version__ = "0.1.0"
 
 
