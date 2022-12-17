@@ -1,8 +1,8 @@
 [tool.poetry]
 name = "bstruct"
 version = "0.1.0"
-description = "An ergonomic, extensible, and fast library for encoding/decoding binary data."
-authors = ["Felix Bernhardt <felix.bernhardt@mailbox.org>"]
+description = "Create efficient encoders and decoders for binary data using type annotations."
+authors = ["flxbe <flxbe@mailbox.org>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
