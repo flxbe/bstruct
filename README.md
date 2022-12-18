@@ -7,9 +7,6 @@ Declaratively create encoders and decoders for binary data using type annotation
 - **Efficient**: Only do the minimum work necessary to pack/unpack the binary data and translate from/into complex data types.
   Allow easy fallback to Python's built-in `struct` library for maximum performance.
 
-The goal is to strike a sensible balance between usability and efficiency
-while allowing easy fallback to Python's built-in `struct` library for maximum performance.
-
 ## ⚠️ DISCLAIMER
 
 This project is still a work in progress and has multiple areas that need some work (big-endian support, error handling).
