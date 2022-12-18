@@ -6,6 +6,7 @@ authors = ["flxbe <flxbe@mailbox.org>"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
+typing-extensions = "^4.4.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1"

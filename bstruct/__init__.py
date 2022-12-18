@@ -11,8 +11,9 @@ from typing import (
     Literal,
     Annotated,
 )
-import inspect
 import typing
+from typing_extensions import dataclass_transform
+import inspect
 import dataclasses
 from enum import IntEnum
 from struct import Struct as _Struct, error as StructError
@@ -327,7 +328,7 @@ def _resolve_bytes_encoding(metadata: list[Any]) -> _NativeEncoding[bytes]:
     raise TypeError("Cannot find bytes type annotation")
 
 
-@typing.dataclass_transform()
+@dataclass_transform()
 class Struct:
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
