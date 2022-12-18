@@ -1,5 +1,8 @@
 # bstruct
 
+[![ci](https://github.com/flxbe/bstruct/actions/workflows/ci.yml/badge.svg)](https://github.com/flxbe/bstruct/actions/workflows/ci.yml)
+[![pypi](https://img.shields.io/pypi/v/bstruct)](https://pypi.org/project/bstruct/)
+
 Declaratively create encoders and decoders for binary data using type annotations.
 
 - **Simple**: Just use regular type annotations to declare all the necessary information for parsing.
