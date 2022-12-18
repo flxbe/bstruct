@@ -22,23 +22,33 @@ pip install bstruct
 ```
 
 ```python
+from typing import Annotated
 import bstruct
 
 
-class Data(bstruct.Struct):
-    a: bool
-    b: bstruct.u8
+class Item(bstruct.Struct):
+    id: bstruct.u64
+    value: bstruct.i32
 
-data = Data(a=True, b=1)
+class Sequence(bstruct.Struct):
+    items: Annotated[list[Item], bstruct.Length(3)]
 
-encoded = bstruct.encode(data)
+sequence = Sequence(
+    items=[
+        Item(id=0, value=-1),
+        Item(id=1, value=0),
+        Item(id=2, value=1),
+    ]
+)
+
+encoded = bstruct.encode(sequence)
 decoded = bstruct.decode(Data, encoded)
 
-assert decoded == data
+assert decoded == sequence
 ```
 
-The helper type `bstruct.u8` is just an annotated int: `Annotated[int, Encodings.u8]`.
-As a result, the attribute `b` is just a native `int`.
+The helper type `bstruct.u64` is just an annotated int: `Annotated[int, Encodings.u64]` under the hood.
+Both during runtime and type-checking, both `id` and `value` are just plain `int` values.
 
 ### Supported Types
 
