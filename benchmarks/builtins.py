@@ -1,14 +1,11 @@
 import timeit
 from typing import Annotated, Callable, Any
-from dataclasses import dataclass
 
 import construct
 import bstruct
 
 
-@bstruct.derive()
-@dataclass
-class TestData:
+class TestData(bstruct.Struct):
     u8: bstruct.u8
     u16: bstruct.u16
     u32: bstruct.u32

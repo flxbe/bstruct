@@ -1,13 +1,18 @@
 # bstruct
 
 Declaratively create encoders and decoders for binary data using type annotations.
+
+- **Simple**: Just use regular type annotations to declare all the necessary information for parsing.
+  No custom syntax, operator overloading or custom wrapper types.
+- **Efficient**: Only do the minimum work necessary to pack/unpack the binary data and translate from/into complex data types.
+  Allow easy fallback to Python's built-in `struct` library for maximum performance.
+
 The goal is to strike a sensible balance between usability and efficiency
 while allowing easy fallback to Python's built-in `struct` library for maximum performance.
 
 ## ⚠️ DISCLAIMER
 
-While I used this approach successfully in production for over a year, this project is still a work in progress
-and has multiple areas that need a lot of work (support for big-endian order, error handling).
+This project is still a work in progress and has multiple areas that need some work (big-endian support, error handling).
 Use at your own risk.
 
 ## Getting Started
@@ -17,14 +22,10 @@ pip install bstruct
 ```
 
 ```python
-from dataclasses import dataclass
-
 import bstruct
 
 
-@bstruct.derive()
-@dataclass
-class Data:
+class Data(bstruct.Struct):
     a: bool
     b: bstruct.u8
 
@@ -42,15 +43,12 @@ As a result, the attribute `b` is just a native `int`.
 ### Supported Types
 
 ```python
-from dataclasses import dataclass
 from typing import Annotated
 
 import bstruct
 
 
-@bstruct.derive()
-@dataclass
-class Data:
+class Data(bstruct.Struct):
     u8: bstruct.u8
     u16: bstruct.u16
     u32: bstruct.u32
@@ -72,52 +70,56 @@ class Data:
 ### Nested Classes
 
 ```python
-@bstruct.derive()
-@dataclass
-class Inner:
+import bstruct
+
+
+class Inner(bstruct.Struct):
     value: bstruct.u32
 
-@bstruct.derive()
-@dataclass
-class Outer:
+class Outer(bstruct.Struct):
     value: Inner
 ```
 
 ### `IntEnum`
 
 ```python
+import bstruct
+
+
 class Type(IntEnum):
     A = 1
     B = 2
 
-@bstruct.derive()
-@dataclass
-class Data:
+class Data(bstruct.Struct):
     type: Annotated[Type, bstruct.Encodings.u8]
 ```
 
 ### Patch Existing Classes
 
 ```python
+from dataclasses import dataclass
+
+import bstruct
+
 @dataclass
 class ExistingClass:
     a: int
     b: int
 
-def _decode_test_class(data: bytes) -> TestData:
+def _decode_existing_class(data: bytes) -> ExistingClass:
     u8 = int.from_bytes(data[0:1], byteorder="little", signed=False)
     u16 = int.from_bytes(data[1:3], byteorder="little", signed=False)
 
-    return TestData(u8, u16)
+    return ExistingClass(u8, u16)
 
-def _encode_test_class(value: TestData) -> bytes:
+def _encode_existing_class(value: ExistingClass) -> bytes:
     b8 = value.u8.to_bytes(1, "little", signed=False)
     b16 = value.u16.to_bytes(2, "little", signed=False)
 
     return b8 + b16
 
 bstruct.patch(
-    TestData, size=3, decode=_decode_test_class, encode=_encode_test_class
+    ExistingClass, size=3, decode=_decode_existing_class, encode=_encode_existing_class
 )
 
 ```
@@ -125,9 +127,10 @@ bstruct.patch(
 ### Use Underlying `struct.Struct`
 
 ```python
-@bstruct.derive()
-@dataclass
-class Data:
+import bstruct
+
+
+class Data(bstruct.Struct):
     u8: bstruct.u8
     u16: bstruct.u16
 
@@ -138,6 +141,11 @@ It is also possible to use `bstruct` only as a convenience wrapper for creating 
 This of course only works for types supported by `struct`.
 
 ```python
+import struct
+
+import bstruct
+
+
 format_str = bstruct.compile_format([
     bstruct.Encodings.u8,
     bstruct.Encodings.bytes(8),

@@ -1,6 +1,5 @@
 import timeit
 from typing import Annotated, Any, Callable
-from dataclasses import dataclass
 
 import bstruct
 import construct
@@ -9,9 +8,7 @@ import construct
 RUNS = 100_000
 
 
-@bstruct.derive()
-@dataclass
-class NativeList:
+class NativeList(bstruct.Struct):
     values: Annotated[list[bstruct.u8], bstruct.Length(10)]
 
 
@@ -43,15 +40,11 @@ def _encode_native_list() -> None:
 _measure_and_print("bstruct: encode (native items)", _encode_native_list)
 
 
-@bstruct.derive()
-@dataclass
-class ListItem:
+class ListItem(bstruct.Struct):
     a: bstruct.u8
 
 
-@bstruct.derive()
-@dataclass
-class ClassList:
+class ClassList(bstruct.Struct):
     values: Annotated[list[ListItem], bstruct.Length(10)]
 
 

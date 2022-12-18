@@ -7,9 +7,7 @@ import bstruct
 
 
 def test_should_encode_bool_values() -> None:
-    @bstruct.derive()
-    @dataclass
-    class TestData:
+    class TestData(bstruct.Struct):
         v1: bool
         v2: bool
 
@@ -22,9 +20,7 @@ def test_should_encode_bool_values() -> None:
 
 
 def test_should_encode_unsigned_integers() -> None:
-    @bstruct.derive()
-    @dataclass
-    class TestData:
+    class TestData(bstruct.Struct):
         u8: bstruct.u8
         u16: bstruct.u16
         u32: bstruct.u32
@@ -41,9 +37,7 @@ def test_should_encode_unsigned_integers() -> None:
 
 
 def test_should_encode_signed_integers() -> None:
-    @bstruct.derive()
-    @dataclass
-    class TestData:
+    class TestData(bstruct.Struct):
         i8: bstruct.i8
         i16: bstruct.i16
         i32: bstruct.i32
@@ -64,9 +58,7 @@ def test_should_encode_int_enums() -> None:
         A = 1
         B = 2
 
-    @bstruct.derive()
-    @dataclass
-    class TestData:
+    class TestData(bstruct.Struct):
         a8: Annotated[TestEnum, bstruct.Encodings.u8]
         b8: Annotated[TestEnum, bstruct.Encodings.i8]
         a16: Annotated[TestEnum, bstruct.Encodings.u16]
@@ -102,9 +94,7 @@ def test_should_encode_int_enums() -> None:
 
 
 def test_should_encode_strings() -> None:
-    @bstruct.derive()
-    @dataclass
-    class TestData:
+    class TestData(bstruct.Struct):
         v1: Annotated[str, bstruct.Size(size=11)]
         v2: Annotated[str, bstruct.Size(size=20)]
 
@@ -117,9 +107,7 @@ def test_should_encode_strings() -> None:
 
 
 def test_should_encode_bytes() -> None:
-    @bstruct.derive()
-    @dataclass
-    class TestData:
+    class TestData(bstruct.Struct):
         v1: Annotated[bytes, bstruct.Size(size=11)]
 
     original = TestData(v1=b"hello world")
@@ -131,15 +119,11 @@ def test_should_encode_bytes() -> None:
 
 
 def test_should_encode_nested_classes() -> None:
-    @bstruct.derive()
-    @dataclass
-    class InnerClass:
+    class InnerClass(bstruct.Struct):
         value_1: bstruct.u32
         value_2: bstruct.u32
 
-    @bstruct.derive()
-    @dataclass
-    class OuterClass:
+    class OuterClass(bstruct.Struct):
         inner_1: InnerClass
         inner_2: InnerClass
 
@@ -185,9 +169,7 @@ def test_should_patch_external_classes() -> None:
 
 
 def test_should_encode_I80F48() -> None:
-    @bstruct.derive()
-    @dataclass
-    class TestData:
+    class TestData(bstruct.Struct):
         value: bstruct.I80F48
 
     original = TestData(Decimal("1234"))
@@ -199,15 +181,11 @@ def test_should_encode_I80F48() -> None:
 
 
 def test_should_encode_arrays() -> None:
-    @bstruct.derive()
-    @dataclass
-    class TestItem:
+    class TestItem(bstruct.Struct):
         a: bstruct.u8
         b: bstruct.u8
 
-    @bstruct.derive()
-    @dataclass
-    class TestData:
+    class TestData(bstruct.Struct):
         native_values: Annotated[list[bstruct.u8], bstruct.Length(5)]
         custom_values: Annotated[list[TestItem], bstruct.Length(2)]
 
@@ -220,9 +198,7 @@ def test_should_encode_arrays() -> None:
 
 
 def test_should_unpack_multiple_instances() -> None:
-    @bstruct.derive()
-    @dataclass
-    class TestData:
+    class TestData(bstruct.Struct):
         value: bstruct.u8
 
     original_1 = TestData(1)
@@ -245,9 +221,7 @@ def test_should_unpack_multiple_instances() -> None:
 def test_new_type() -> None:
     NewInt = NewType("new_int", int)
 
-    @bstruct.derive()
-    @dataclass
-    class TestData:
+    class TestData(bstruct.Struct):
         value: Annotated[NewInt, bstruct.Encodings.u8]
 
     original = TestData(NewInt(1))

@@ -15,7 +15,7 @@ import inspect
 import typing
 import dataclasses
 from enum import IntEnum
-from struct import Struct, error as StructError
+from struct import Struct as _Struct, error as StructError
 from decimal import Decimal
 
 
@@ -45,7 +45,7 @@ class _StructEncoding(Generic[T]):
         encode: Encoder[T],
     ):
         self.format = format
-        self.struct = Struct(f"<{format}")
+        self.struct = _Struct(f"<{format}")
         self.size = self.struct.size
 
         self.decode = decode
@@ -327,14 +327,18 @@ def _resolve_bytes_encoding(metadata: list[Any]) -> _NativeEncoding[bytes]:
     raise TypeError("Cannot find bytes type annotation")
 
 
-def derive(*, byte_order: ByteOrder = "little") -> Callable[[type[T]], type[T]]:
-    return lambda cls: _derive(cls, byte_order=byte_order)
+@typing.dataclass_transform()
+class Struct:
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+
+        assert not dataclasses.is_dataclass(cls)
+        dataclasses.dataclass(cls)
+
+        _derive(cls, byte_order="little")
 
 
-def _derive(cls: type[T], byte_order: ByteOrder) -> type[T]:
-    if not dataclasses.is_dataclass(cls):
-        raise TypeError("Class must be a dataclass")
-
+def _derive(cls: type[T], byte_order: ByteOrder) -> _StructEncoding[T]:
     fields = dataclasses.fields(cls)
 
     attribute_decoders: list[Decoder[Any]] = []
@@ -368,7 +372,7 @@ def _derive(cls: type[T], byte_order: ByteOrder) -> type[T]:
     )
     _set_struct_encoding(cls, encoding)
 
-    return cls
+    return encoding
 
 
 def compile_format(fields: list[_NativeEncoding[Any]]) -> str:
@@ -382,7 +386,10 @@ def patch(
     _set_struct_encoding(cls, encoding)
 
 
-def decode(cls: type[T], data: bytes, strict: bool = True) -> T:
+S = TypeVar("S", bound=Struct)
+
+
+def decode(cls: type[S], data: bytes, strict: bool = True) -> S:
     encoding = _get_struct_encoding(cls)
 
     if not strict:
@@ -396,7 +403,7 @@ def decode(cls: type[T], data: bytes, strict: bool = True) -> T:
         raise
 
 
-def decode_all(cls: type[T], data: bytes) -> Iterator[T]:
+def decode_all(cls: type[S], data: bytes) -> Iterator[S]:
     encoding = _get_struct_encoding(cls)
 
     try:
@@ -409,7 +416,7 @@ def decode_all(cls: type[T], data: bytes) -> Iterator[T]:
         raise
 
 
-def decode_from(cls: type[T], data_stream: BytesIO) -> T:
+def decode_from(cls: type[S], data_stream: BytesIO) -> S:
     encoding = _get_struct_encoding(cls)
 
     data = data_stream.read(encoding.size)
@@ -422,9 +429,8 @@ def decode_from(cls: type[T], data_stream: BytesIO) -> T:
         raise
 
 
-def encode(value: Any) -> bytes:
-    cls = type(value)
-    encoding = _get_struct_encoding(cls)
+def encode(value: Struct) -> bytes:
+    encoding = _get_struct_encoding(type(value))
 
     raw_attributes: list[Any] = []
     encoding.encode(value, raw_attributes)
@@ -432,17 +438,17 @@ def encode(value: Any) -> bytes:
     return encoding.struct.pack(*raw_attributes)
 
 
-def get_struct(cls: Any) -> Struct:
+def get_struct(cls: type[Struct]) -> _Struct:
     encoding = _get_struct_encoding(cls)
     return encoding.struct
 
 
-def get_size(cls: Any) -> int:
+def get_size(cls: type[Struct]) -> int:
     encoding = _get_struct_encoding(cls)
     return encoding.size
 
 
-def _get_struct_encoding(cls: type[T]) -> _StructEncoding[T]:
+def _get_struct_encoding(cls: type[S]) -> _StructEncoding[S]:
     return getattr(cls, "__bstruct_encoding")
 
 
