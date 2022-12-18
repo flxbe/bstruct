@@ -42,7 +42,7 @@ sequence = Sequence(
 )
 
 encoded = bstruct.encode(sequence)
-decoded = bstruct.decode(Data, encoded)
+decoded = bstruct.decode(Sequence, encoded)
 
 assert decoded == sequence
 ```
