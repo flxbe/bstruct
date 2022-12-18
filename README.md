@@ -167,17 +167,29 @@ on a MacBook Pro 2018 with a 2.3GHz i5 processor.
 
 | Name                 | decode   | encode   |
 | -------------------- | -------- | -------- |
-| bstruct              | 1.97 us  | 1.67 us  |
 | struct               | 0.62 us  | 0.23 us  |
+| bstruct              | 1.97 us  | 1.67 us  |
 | construct            | 23.10 us | 22.11 us |
 | construct (compiled) | 24.90 us | 25.43 us |
 
-### `benchmarks/lists.py`
+### `benchmarks/native_list.py`
 
-| Name                     | decode   | encode    |
-| ------------------------ | -------- | --------- |
-| bstruct (native items)   | 1.85 us  | 1.03 us   |
-| bstruct (class items)    | 7.88 us  | 5.69 us   |
-| struct (native items)    | 0.20 us  | 0.35 us   |
-| construct (native items) | 17.66 us | 17.34 us  |
-| construct (class items)  | 98.07 us | 100.76 us |
+| Name      | decode  | encode  |
+| --------- | ------- | ------- |
+| struct    | 0.18 us | 0.34 us |
+| bstruct   | 2.03 us | 1.04 us |
+| construct | 8.99 us | 8.34 us |
+
+### `benchmarks/class_list.py`
+
+| Name      | decode   | encode   |
+| --------- | -------- | -------- |
+| bstruct   | 7.28 us  | 5.19 us  |
+| construct | 88.78 us | 84.85 us |
+
+### `benchmarks/nested.py`
+
+| Name      | decode   | encode   |
+| --------- | -------- | -------- |
+| bstruct   | 5.36 us  | 4.44 us  |
+| construct | 70.48 us | 70.93 us |
