@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.3.0]
+
 ### Changed
 
 - Use `bstruct.Struct` baseclass instead of the decorator `bstruct.derive`
 
-[unreleased]: https://github.com/flxbe/bstruct/compare/v0.2.0...HEAD
+[unreleased]: https://github.com/flxbe/bstruct/compare/v0.3.0...HEAD
+[v0.3.0]: https://github.com/flxbe/bstruct/compare/v0.2.0...v0.3.0
