@@ -3,6 +3,9 @@ name = "bstruct"
 version = "0.3.0"
 description = "Create efficient encoders and decoders for binary data using type annotations."
 authors = ["flxbe <flxbe@mailbox.org>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/flxbe/bstruct"
 
 [tool.poetry.dependencies]
 python = "^3.10"

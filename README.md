@@ -3,17 +3,12 @@
 [![ci](https://github.com/flxbe/bstruct/actions/workflows/ci.yml/badge.svg)](https://github.com/flxbe/bstruct/actions/workflows/ci.yml)
 [![pypi](https://img.shields.io/pypi/v/bstruct)](https://pypi.org/project/bstruct/)
 
-Declaratively create encoders and decoders for binary data using type annotations.
-
-- **Simple**: Just use regular type annotations to declare all the necessary information for parsing.
-  No custom syntax, operator overloading or custom wrapper types.
-- **Efficient**: Only do the minimum work necessary to pack/unpack the binary data and translate from/into complex data types.
-  Allow easy fallback to Python's built-in `struct` library for maximum performance.
+Simple and efficient binary parsing using regular type annotations.
+Supports easy fallback to Python's built-in `struct` library for maximum performance.
 
 ## ⚠️ DISCLAIMER
 
-This project is still a work in progress and has multiple areas that need some work (big-endian support, error handling).
-Use at your own risk.
+This project is still a work in progress. Use at your own risk.
 
 ## Getting Started
 
@@ -47,8 +42,8 @@ decoded = bstruct.decode(Sequence, encoded)
 assert decoded == sequence
 ```
 
-The helper type `bstruct.u64` is just an annotated int: `Annotated[int, Encodings.u64]` under the hood.
-Both `id` and `value` are therefore just plain `int` values.
+The helper type `bstruct.u64` is just an annotated int: `Annotated[int, Encodings.u64]`.
+Both `id` and `value` are just plain `int` values.
 
 ### Supported Types
 
@@ -72,6 +67,8 @@ class Data(bstruct.Struct):
     i64: bstruct.i64
     i128: bstruct.i128
     i256: bstruct.i256
+
+    i80f48: bstruct.I80F48
 
     text: Annotated[str, bstruct.Size(size=8)]
     raw: Annotated[bytes, bstruct.Size(size=8)]
