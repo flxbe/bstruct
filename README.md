@@ -48,7 +48,7 @@ assert decoded == sequence
 ```
 
 The helper type `bstruct.u64` is just an annotated int: `Annotated[int, Encodings.u64]` under the hood.
-Both during runtime and type-checking, both `id` and `value` are just plain `int` values.
+Both `id` and `value` are therefore just plain `int` values.
 
 ### Supported Types
 
