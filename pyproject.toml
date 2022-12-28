@@ -18,6 +18,11 @@ construct = "2.10.68"
 snakeviz = "^2.1.1"
 pyright = "^1.1.271"
 
+[tool.poetry.group.dev.dependencies]
+sphinx = "^5.3.0"
+myst-parser = "^0.18.1"
+furo = "^2022.12.7"
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"

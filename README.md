@@ -3,14 +3,20 @@
 [![ci](https://github.com/flxbe/bstruct/actions/workflows/ci.yml/badge.svg)](https://github.com/flxbe/bstruct/actions/workflows/ci.yml)
 [![pypi](https://img.shields.io/pypi/v/bstruct)](https://pypi.org/project/bstruct/)
 
+<!-- start elevator-pitch -->
+
 Simple and efficient binary parsing using regular type annotations.
 Supports easy fallback to Python's built-in `struct` library for maximum performance.
+
+<!-- end elevator-pitch -->
 
 ## ⚠️ DISCLAIMER
 
 This project is still a work in progress. Use at your own risk.
 
 ## Getting Started
+
+<!-- start quickstart -->
 
 ```bash
 pip install bstruct
@@ -45,122 +51,7 @@ assert decoded == sequence
 The helper type `bstruct.u64` is just an annotated int: `Annotated[int, Encodings.u64]`.
 Both `id` and `value` are just plain `int` values.
 
-### Supported Types
-
-```python
-from typing import Annotated
-
-import bstruct
-
-
-class Data(bstruct.Struct):
-    u8: bstruct.u8
-    u16: bstruct.u16
-    u32: bstruct.u32
-    u64: bstruct.u64
-    u128: bstruct.u128
-    u256: bstruct.u256
-
-    i8: bstruct.i8
-    i16: bstruct.i16
-    i32: bstruct.i32
-    i64: bstruct.i64
-    i128: bstruct.i128
-    i256: bstruct.i256
-
-    i80f48: bstruct.I80F48
-
-    text: Annotated[str, bstruct.Size(size=8)]
-    raw: Annotated[bytes, bstruct.Size(size=8)]
-```
-
-### Nested Classes
-
-```python
-import bstruct
-
-
-class Inner(bstruct.Struct):
-    value: bstruct.u32
-
-class Outer(bstruct.Struct):
-    value: Inner
-```
-
-### `IntEnum`
-
-```python
-import bstruct
-
-
-class Type(IntEnum):
-    A = 1
-    B = 2
-
-class Data(bstruct.Struct):
-    type: Annotated[Type, bstruct.Encodings.u8]
-```
-
-### Patch Existing Classes
-
-```python
-from dataclasses import dataclass
-
-import bstruct
-
-@dataclass
-class ExistingClass:
-    a: int
-    b: int
-
-def _decode_existing_class(data: bytes) -> ExistingClass:
-    u8 = int.from_bytes(data[0:1], byteorder="little", signed=False)
-    u16 = int.from_bytes(data[1:3], byteorder="little", signed=False)
-
-    return ExistingClass(u8, u16)
-
-def _encode_existing_class(value: ExistingClass) -> bytes:
-    b8 = value.u8.to_bytes(1, "little", signed=False)
-    b16 = value.u16.to_bytes(2, "little", signed=False)
-
-    return b8 + b16
-
-bstruct.patch(
-    ExistingClass, size=3, decode=_decode_existing_class, encode=_encode_existing_class
-)
-
-```
-
-### Use Underlying `struct.Struct`
-
-```python
-import bstruct
-
-
-class Data(bstruct.Struct):
-    u8: bstruct.u8
-    u16: bstruct.u16
-
-native_struct = bstruct.get_struct(Data)
-```
-
-It is also possible to use `bstruct` only as a convenience wrapper for creating the native `struct` format string.
-This of course only works for types supported by `struct`.
-
-```python
-import struct
-
-import bstruct
-
-
-format_str = bstruct.compile_format([
-    bstruct.Encodings.u8,
-    bstruct.Encodings.bytes(8),
-    bstruct.Encodings.i64
-])
-
-struct.Struct(f"<{format_str}")
-```
+<!-- end quickstart -->
 
 ## Benchmarks
 
