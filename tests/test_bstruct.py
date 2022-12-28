@@ -144,15 +144,15 @@ def test_should_patch_external_classes() -> None:
         u8: int
         u16: int
 
-    def _decode_test_class(data: bytes) -> TestData:
-        u8 = int.from_bytes(data[0:1], byteorder="little", signed=False)
-        u16 = int.from_bytes(data[1:3], byteorder="little", signed=False)
+    def _decode_test_class(data: bytes, byteorder: bstruct.ByteOrder) -> TestData:
+        u8 = int.from_bytes(data[0:1], byteorder, signed=False)
+        u16 = int.from_bytes(data[1:3], byteorder, signed=False)
 
         return TestData(u8, u16)
 
-    def _encode_test_class(value: TestData) -> bytes:
-        b8 = value.u8.to_bytes(1, "little", signed=False)
-        b16 = value.u16.to_bytes(2, "little", signed=False)
+    def _encode_test_class(value: TestData, byteorder: bstruct.ByteOrder) -> bytes:
+        b8 = value.u8.to_bytes(1, byteorder, signed=False)
+        b16 = value.u16.to_bytes(2, byteorder, signed=False)
 
         return b8 + b16
 
@@ -160,10 +160,13 @@ def test_should_patch_external_classes() -> None:
         TestData, size=3, decode=_decode_test_class, encode=_encode_test_class
     )
 
-    original = TestData(u8=1, u16=2)
+    class Struct(bstruct.Struct):
+        value: TestData
+
+    original = Struct(TestData(u8=1, u16=2))
 
     data = bstruct.encode(original)
-    decoded = bstruct.decode(TestData, data)
+    decoded = bstruct.decode(Struct, data)
 
     assert decoded == original
 
@@ -230,3 +233,31 @@ def test_new_type() -> None:
     decoded = bstruct.decode(TestData, data)
 
     assert decoded == original
+
+
+def test_should_correctly_handle_byte_order() -> None:
+    class Struct(bstruct.Struct):
+        small: bstruct.u16
+        large: bstruct.u128
+
+    value = Struct(small=0xFF00, large=0xFFFF_FFFF_FFFF_FFFF_0000_0000_0000_0000)
+
+    data = bstruct.encode(value, byteorder="little")
+    assert bstruct.decode(Struct, data, byteorder="little") == Struct(
+        small=0xFF00,
+        large=0xFFFF_FFFF_FFFF_FFFF_0000_0000_0000_0000,
+    )
+    assert bstruct.decode(Struct, data, byteorder="big") == Struct(
+        small=0x00FF,
+        large=0x0000_0000_0000_0000_FFFF_FFFF_FFFF_FFFF,
+    )
+
+    data = bstruct.encode(value, byteorder="big")
+    assert bstruct.decode(Struct, data, byteorder="little") == Struct(
+        small=0x00FF,
+        large=0x0000_0000_0000_0000_FFFF_FFFF_FFFF_FFFF,
+    )
+    assert bstruct.decode(Struct, data, byteorder="big") == Struct(
+        small=0xFF00,
+        large=0xFFFF_FFFF_FFFF_FFFF_0000_0000_0000_0000,
+    )
