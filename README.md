@@ -53,6 +53,8 @@ Both `id` and `value` are just plain `int` values.
 
 <!-- end quickstart -->
 
+See the [documentation](https://bstruct.readthedocs.io/) for more information.
+
 ## Benchmarks
 
 Please see the source of the benchmarks in the `benchmarks` directory.
