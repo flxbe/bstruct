@@ -13,4 +13,5 @@
 quickstart
 supported_types
 advanced
+license
 ```
