@@ -91,6 +91,16 @@ class Outer(bstruct.Struct):
     value: Inner
 ```
 
-## Lists
+## Arrays
 
-Todo
+Fixed sized arrays can be translated from/into Python lists.
+
+```python
+from typing import Annotated
+
+import bstruct
+
+
+class Data(bstruct.Struct):
+    items: Annotated[list[bstruct.u8], bstruct.Length(10)]
+```

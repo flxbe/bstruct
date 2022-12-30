@@ -12,16 +12,10 @@
 
 quickstart
 supported_types
+patch
+native_struct
 api
 license
-```
-
-```{toctree}
-:maxdepth: 2
-:caption: Advanced
-
-advanced/patch
-advanced/native_struct
 ```
 
 ```{toctree}
