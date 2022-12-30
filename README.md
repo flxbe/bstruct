@@ -28,17 +28,17 @@ import bstruct
 
 
 class Item(bstruct.Struct):
-    id: bstruct.u64
-    value: bstruct.i32
+    identifier: bstruct.u64  # shorthand for: Annotated[int, bstruct.Encodings.u64]
+    value: bstruct.i32       # shorthand for: Annotated[int, bstruct.Encodings.i32]
 
 class Sequence(bstruct.Struct):
     items: Annotated[list[Item], bstruct.Length(3)]
 
 sequence = Sequence(
     items=[
-        Item(id=0, value=-1),
-        Item(id=1, value=0),
-        Item(id=2, value=1),
+        Item(identifier=0, value=-1),
+        Item(identifier=1, value=0),
+        Item(identifier=2, value=1),
     ]
 )
 
@@ -47,9 +47,6 @@ decoded = bstruct.decode(Sequence, encoded)
 
 assert decoded == sequence
 ```
-
-The helper type `bstruct.u64` is just an annotated int: `Annotated[int, Encodings.u64]`.
-Both `id` and `value` are just plain `int` values.
 
 <!-- end quickstart -->
 
