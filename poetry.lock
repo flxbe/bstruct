@@ -524,6 +524,18 @@ files = [
 diagrams = ["jinja2", "railroad-diagrams"]
 
 [[package]]
+name = "pyperf"
+version = "2.5.0"
+description = "Python module to run and analyze benchmarks"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pyperf-2.5.0-py3-none-any.whl", hash = "sha256:41633bf3e55094834a803f9be612e5658bab4df6215c324de91d93ec96f16cef"},
+    {file = "pyperf-2.5.0.tar.gz", hash = "sha256:9fd9be5b57224e68b5a5b88f7126f15b6c8667573f62a0a39faf14d6fdd13909"},
+]
+
+[[package]]
 name = "pyright"
 version = "1.1.271"
 description = "Command line wrapper for pyright"
@@ -919,4 +931,4 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "51adff23ed6cdae4597049e744250f2df3921a5988be6661136dadaf517c065b"
+content-hash = "1761c88925868e0e6f00b3a24a65686e8a492f03addcb684a6808cc5d71909a9"

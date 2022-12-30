@@ -22,6 +22,7 @@ pyright = "^1.1.271"
 sphinx = "^5.3.0"
 myst-parser = "^0.18.1"
 furo = "^2022.12.7"
+pyperf = "^2.5.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

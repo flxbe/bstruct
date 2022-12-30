@@ -59,37 +59,38 @@ See the [documentation](https://bstruct.readthedocs.io/) for more information.
 
 Please see the source of the benchmarks in the `benchmarks` directory.
 Feel free to create an issue or PR should there be a problem with the methodology.
-The benchmarks where executed using Python 3.11.1 and
+The benchmarks where executed with
+[pyperf](https://github.com/psf/pyperf)
+using Python 3.11.1 and
 [construct](https://pypi.org/project/construct/) 2.10.68
 on a MacBook Pro 2018 with a 2.3GHz i5 processor.
 
 ### `benchmarks/builtins.py`
 
-| Name                 | decode   | encode   |
-| -------------------- | -------- | -------- |
-| struct               | 0.62 us  | 0.23 us  |
-| bstruct              | 1.97 us  | 1.67 us  |
-| construct            | 23.10 us | 22.11 us |
-| construct (compiled) | 24.90 us | 25.43 us |
+| Name                 | decode  | encode  |
+| -------------------- | ------- | ------- |
+| struct               | 0.56 us | 0.22 us |
+| bstruct              | 2.58 us | 1.68 us |
+| construct (compiled) | 9.31 us | 9.85 us |
 
 ### `benchmarks/native_list.py`
 
-| Name      | decode  | encode  |
-| --------- | ------- | ------- |
-| struct    | 0.18 us | 0.34 us |
-| bstruct   | 2.03 us | 1.04 us |
-| construct | 8.99 us | 8.34 us |
+| Name                 | decode  | encode  |
+| -------------------- | ------- | ------- |
+| struct               | 0.16 us | 0.32 us |
+| bstruct              | 2.46 us | 0.97 us |
+| construct (compiled) | 4.02 us | 6.86 us |
 
 ### `benchmarks/class_list.py`
 
-| Name      | decode   | encode   |
-| --------- | -------- | -------- |
-| bstruct   | 7.28 us  | 5.19 us  |
-| construct | 88.78 us | 84.85 us |
+| Name                 | decode  | encode  |
+| -------------------- | ------- | ------- |
+| bstruct              | 8.54 us | 5.13 us |
+| construct (compiled) | 34.4 us | 38.6 us |
 
 ### `benchmarks/nested.py`
 
-| Name      | decode   | encode   |
-| --------- | -------- | -------- |
-| bstruct   | 5.36 us  | 4.44 us  |
-| construct | 70.48 us | 70.93 us |
+| Name                 | decode  | encode  |
+| -------------------- | ------- | ------- |
+| bstruct              | 6.30 us | 4.47 us |
+| construct (compiled) | 29.2 us | 29.2 us |
