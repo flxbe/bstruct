@@ -25,8 +25,8 @@ jobs:
       - name: Install dependencies
         run: poetry install --without dev
       - name: Check Formatting
-        run: black --check .
+        run: poetry run black --check .
       - name: Lint
-        run: pyright
+        run: poetry run pyright
       - name: test
         run: poetry run pytest
