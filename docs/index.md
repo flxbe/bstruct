@@ -8,10 +8,27 @@
 ## Contents
 
 ```{toctree}
-:maxdepth: 3
+:maxdepth: 2
 
 quickstart
 supported_types
-advanced
+api
 license
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Advanced
+
+advanced/patch
+advanced/native_struct
+```
+
+```{toctree}
+---
+caption: Project Links
+---
+
+GitHub <https://github.com/flxbe/bstruct>
+PyPI <https://pypi.org/project/bstruct/>
 ```

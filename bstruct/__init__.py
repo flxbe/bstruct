@@ -1,5 +1,5 @@
 from __future__ import annotations
-from io import BytesIO
+from io import BufferedIOBase
 from typing import (
     Any,
     NewType,
@@ -25,8 +25,8 @@ __version__ = "0.3.0"
 
 
 T = TypeVar("T")
-ByteOrder = Literal["big", "little"]
 
+ByteOrder = Literal["big", "little"]
 BytesDecoder = Callable[[bytes, ByteOrder], T]
 BytesEncoder = Callable[[T, ByteOrder], bytes]
 
@@ -74,7 +74,7 @@ class _StructEncoding(Generic[T]):
             return self.be_struct
 
 
-class CustomEncoding(Generic[T]):
+class _CustomEncoding(Generic[T]):
     def __init__(
         self,
         format: str,
@@ -100,7 +100,7 @@ class _IntEncoding(_NativeEncoding[int]):
     pass
 
 
-Encoding = Union[_NativeEncoding[T], CustomEncoding[T], _StructEncoding[T]]
+Encoding = Union[_NativeEncoding[T], _CustomEncoding[T], _StructEncoding[T]]
 
 
 def _decode_str(attributes: Iterator[Any], _byteorder: ByteOrder) -> str:
@@ -166,10 +166,10 @@ class Encodings:
     u16 = _IntEncoding(format="H")
     u32 = _IntEncoding(format="I")
     u64 = _IntEncoding(format="Q")
-    u128: CustomEncoding[int] = CustomEncoding(
+    u128: _CustomEncoding[int] = _CustomEncoding(
         format="16s", decode=_decode_uint, encode=_encode_uint128
     )
-    u256: CustomEncoding[int] = CustomEncoding(
+    u256: _CustomEncoding[int] = _CustomEncoding(
         format="32s", decode=_decode_uint, encode=_encode_uint256
     )
 
@@ -177,14 +177,14 @@ class Encodings:
     i16 = _IntEncoding(format="h")
     i32 = _IntEncoding(format="i")
     i64 = _IntEncoding(format="q")
-    i128: CustomEncoding[int] = CustomEncoding(
+    i128: _CustomEncoding[int] = _CustomEncoding(
         format="16s", decode=_decode_int, encode=_encode_int128
     )
-    i256: CustomEncoding[int] = CustomEncoding(
+    i256: _CustomEncoding[int] = _CustomEncoding(
         format="32s", decode=_decode_int, encode=_encode_int256
     )
 
-    I80F48: CustomEncoding[Decimal] = CustomEncoding(
+    I80F48: _CustomEncoding[Decimal] = _CustomEncoding(
         "16s", _decode_I80F48, _encode_I80F48
     )
 
@@ -268,7 +268,7 @@ def _encode_native_list(
 
 def _resolve_array_encoding(
     array_type: Any, metadata: list[Any]
-) -> CustomEncoding[list[Any]]:
+) -> _CustomEncoding[list[Any]]:
     array_length = _resolve_array_length(metadata)
 
     array_type_args = typing.get_args(array_type)
@@ -294,7 +294,7 @@ def _resolve_array_encoding(
             for item in l:
                 inner_encode(item, attributes, byte_order)
 
-    return CustomEncoding(array_format, _decode, _encode)
+    return _CustomEncoding(array_format, _decode, _encode)
 
 
 def _resolve_array_length(metadata: list[Any]) -> int:
@@ -307,10 +307,10 @@ def _resolve_array_length(metadata: list[Any]) -> int:
 
 def _resolve_int_enum_encoding(
     cls: Callable[[int], IntEnum], metadata: list[Any]
-) -> CustomEncoding[IntEnum]:
+) -> _CustomEncoding[IntEnum]:
     inner_encoding: Encoding[int] = _resolve_simple_encoding(metadata)
 
-    return CustomEncoding(
+    return _CustomEncoding(
         format=inner_encoding.format,
         decode=lambda a, b: cls(inner_encoding.decode(a, b)),
         encode=inner_encoding.encode,
@@ -319,17 +319,17 @@ def _resolve_int_enum_encoding(
 
 def _resolve_simple_encoding(metadata: list[Any]) -> Encoding[Any]:
     for data in metadata:
-        if isinstance(data, (_IntEncoding, CustomEncoding)):
+        if isinstance(data, (_IntEncoding, _CustomEncoding)):
             data: Encoding[Any] = data
             return data
 
     raise TypeError("Cannot find integer type annotation")
 
 
-def _resolve_str_encoding(metadata: list[Any]) -> CustomEncoding[str]:
+def _resolve_str_encoding(metadata: list[Any]) -> _CustomEncoding[str]:
     for data in metadata:
         if isinstance(data, Size):
-            return CustomEncoding(
+            return _CustomEncoding(
                 format=f"{data.size}s",
                 decode=_decode_str,
                 encode=_encode_str,
@@ -348,6 +348,12 @@ def _resolve_bytes_encoding(metadata: list[Any]) -> _NativeEncoding[bytes]:
 
 @dataclass_transform()
 class Struct:
+    """
+    Inherit from this class to automatically derive the necessary
+    decoding/encoding information.
+    Also transforms any subclasses into a Python dataclass.
+    """
+
     __bstruct_encoding__: ClassVar[_StructEncoding[Any]]
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
@@ -395,12 +401,20 @@ def _derive(cls: type[T]) -> _StructEncoding[T]:
 
 
 def compile_format(fields: list[_NativeEncoding[Any]]) -> str:
+    """
+    Compile a list of attribute descriptions into a `struct.Struct` format string.
+    This does not contain the byteorder specifier (e.g. `<` or `>`).
+    """
     return "".join([field.format for field in fields])
 
 
 def patch(
     cls: type[T], size: int, decode: BytesDecoder[T], encode: BytesEncoder[T]
 ) -> None:
+    """
+    Patch an existing class.
+    The size must be the expected size in bytes of the serialized form of `T`.
+    """
     encoding = _StructEncoding.create_patched_data(size, decode, encode)
     _set_struct_encoding(cls, encoding)
 
@@ -409,6 +423,10 @@ S = TypeVar("S", bound=Struct)
 
 
 def decode(cls: type[S], data: bytes, byteorder: ByteOrder = "little") -> S:
+    """
+    Decode an instance of `S` from the provided data.
+    The size of `data` must exactly match the size of `S`.
+    """
     encoding = cls.__bstruct_encoding__
 
     try:
@@ -422,6 +440,10 @@ def decode(cls: type[S], data: bytes, byteorder: ByteOrder = "little") -> S:
 def decode_all(
     cls: type[S], data: bytes, byteorder: ByteOrder = "little"
 ) -> Iterator[S]:
+    """
+    Decode multiple instances of `S`.
+    The size of `data` must be an integer multiple of the size of `S`.
+    """
     encoding = cls.__bstruct_encoding__
 
     try:
@@ -435,8 +457,11 @@ def decode_all(
 
 
 def decode_from(
-    cls: type[S], data_stream: BytesIO, byteorder: ByteOrder = "little"
+    cls: type[S], data_stream: BufferedIOBase, byteorder: ByteOrder = "little"
 ) -> S:
+    """
+    Read and decode an instance of `S` from the data stream.
+    """
     encoding = cls.__bstruct_encoding__
 
     data = data_stream.read(encoding.size)
@@ -450,6 +475,9 @@ def decode_from(
 
 
 def encode(value: Struct, byteorder: ByteOrder = "little") -> bytes:
+    """
+    Encode the value according to the provided byteorder.
+    """
     encoding = value.__bstruct_encoding__
 
     raw_attributes: list[Any] = []
@@ -459,10 +487,17 @@ def encode(value: Struct, byteorder: ByteOrder = "little") -> bytes:
 
 
 def get_struct(cls: type[Struct], byteorder: ByteOrder = "little") -> _Struct:
+    """
+    Return the underlying `struct.Struct` instance used to (un)pack
+    the binary data.
+    """
     return cls.__bstruct_encoding__.get_struct(byteorder)
 
 
 def get_size(cls: type[Struct]) -> int:
+    """
+    Return the size in bytes of the serialized form of a `bstruct.Struct` class.
+    """
     return cls.__bstruct_encoding__.size
 
 
