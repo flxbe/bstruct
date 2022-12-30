@@ -16,13 +16,13 @@ typing-extensions = "^4.4.0"
 pytest = "^7.1"
 black = "^22.8.0"
 pyright = "^1.1.271"
+construct = "2.10.68"
 
 [tool.poetry.group.dev.dependencies]
 sphinx = "^5.3.0"
 myst-parser = "^0.18.1"
 furo = "^2022.12.7"
 pyperf = "^2.5.0"
-construct = "2.10.68"
 snakeviz = "^2.1.1"
 
 [build-system]
