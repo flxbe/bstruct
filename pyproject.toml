@@ -1,21 +1,20 @@
 [tool.poetry]
 name = "bstruct"
 version = "0.3.0"
-description = "Create efficient encoders and decoders for binary data using type annotations."
+description = "Simple and efficient binary (de)serialization using regular type annotations."
 authors = ["flxbe <flxbe@mailbox.org>"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/flxbe/bstruct"
+documentation = "https://pypi.org/project/bstruct/"
 
 [tool.poetry.dependencies]
 python = "^3.10"
 typing-extensions = "^4.4.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.test.dependencies]
 pytest = "^7.1"
 black = "^22.8.0"
-construct = "2.10.68"
-snakeviz = "^2.1.1"
 pyright = "^1.1.271"
 
 [tool.poetry.group.dev.dependencies]
@@ -23,6 +22,8 @@ sphinx = "^5.3.0"
 myst-parser = "^0.18.1"
 furo = "^2022.12.7"
 pyperf = "^2.5.0"
+construct = "2.10.68"
+snakeviz = "^2.1.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
