@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from enum import IntEnum
 from decimal import Decimal
 
+import pytest
+
 import bstruct
 
 
@@ -261,3 +263,13 @@ def test_should_correctly_handle_byte_order() -> None:
         small=0xFF00,
         large=0xFFFF_FFFF_FFFF_FFFF_0000_0000_0000_0000,
     )
+
+
+def test_should_fail_for_wrong_data_size() -> None:
+    class Struct(bstruct.Struct):
+        value: bstruct.u16
+
+    data = b"\x00"
+
+    with pytest.raises(bstruct.BstructError):
+        bstruct.decode(Struct, data)

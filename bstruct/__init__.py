@@ -17,11 +17,15 @@ from typing_extensions import dataclass_transform
 import inspect
 import dataclasses
 from enum import IntEnum
-from struct import Struct as _Struct, error as StructError
+from struct import Struct as _Struct, error as _StructError
 from decimal import Decimal
 
 
 __version__ = "0.3.0"
+
+
+class BstructError(Exception):
+    pass
 
 
 T = TypeVar("T")
@@ -432,9 +436,8 @@ def decode(cls: type[S], data: bytes, byteorder: ByteOrder = "little") -> S:
     try:
         raw_attributes = encoding.get_struct(byteorder).unpack(data)
         return encoding.decode(iter(raw_attributes), byteorder)
-    except StructError:
-        # TODO: Handle
-        raise
+    except _StructError as error:
+        raise BstructError(str(error)) from error
 
 
 def decode_all(
@@ -451,9 +454,8 @@ def decode_all(
 
         for raw_attributes in iterator:
             yield encoding.decode(iter(raw_attributes), byteorder)
-    except StructError:
-        # TODO: Handle
-        raise
+    except _StructError as error:
+        raise BstructError(str(error)) from error
 
 
 def decode_from(
@@ -469,9 +471,8 @@ def decode_from(
     try:
         raw_attributes = encoding.get_struct(byteorder).unpack(data)
         return encoding.decode(iter(raw_attributes), byteorder)
-    except StructError:
-        # TODO: Handle
-        raise
+    except _StructError as error:
+        raise BstructError(str(error)) from error
 
 
 def encode(value: Struct, byteorder: ByteOrder = "little") -> bytes:
@@ -483,7 +484,10 @@ def encode(value: Struct, byteorder: ByteOrder = "little") -> bytes:
     raw_attributes: list[Any] = []
     encoding.encode(value, raw_attributes, byteorder)
 
-    return encoding.get_struct(byteorder).pack(*raw_attributes)
+    try:
+        return encoding.get_struct(byteorder).pack(*raw_attributes)
+    except _StructError as error:
+        raise BstructError(str(error)) from error
 
 
 def get_struct(cls: type[Struct], byteorder: ByteOrder = "little") -> _Struct:
