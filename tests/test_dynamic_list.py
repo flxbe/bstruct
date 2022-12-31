@@ -20,7 +20,7 @@ def decode(buffer: BytesIO) -> list[Item]:
 
 def encode(items: list[Item], buffer: BytesIO) -> None:
     bstruct.write(Header(len(items)), buffer)
-    bstruct.write_all(items, buffer)
+    bstruct.write_many(items, buffer)
 
 
 def test_should_correctly_work_with_dynamic_content() -> None:

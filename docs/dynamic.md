@@ -21,12 +21,12 @@ def decode(buffer: BytesIO) -> list[Item]:
     header = bstruct.read(Header, buffer)
     items = bstruct.read_many(Item, buffer, count=header.item_count)
 
-    return list(items)
+    return items
 
 
 def encode(items: list[Item], buffer: BytesIO) -> None:
     bstruct.write(Header(len(items)), buffer)
-    bstruct.write_all(items, buffer)
+    bstruct.write_many(items, buffer)
 
 
 items = [Item(i) for i in range(100)]

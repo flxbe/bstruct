@@ -493,14 +493,14 @@ def read_many(
     buffer: BufferedIOBase,
     count: int,
     byteorder: ByteOrder = "little",
-) -> Iterator[S]:
+) -> list[S]:
     """
     Read and decode `count` instances of `cls` from the `buffer`.
     """
     size = cls.__bstruct_encoding__.size
     data = buffer.read(size * count)
 
-    return decode_all(cls, data, byteorder)
+    return list(decode_all(cls, data, byteorder))
 
 
 def encode(value: Struct, byteorder: ByteOrder = "little") -> bytes:
@@ -528,7 +528,7 @@ def write(
     buffer.write(data)
 
 
-def write_all(
+def write_many(
     items: Iterable[Struct], buffer: BufferedIOBase, byteorder: ByteOrder = "little"
 ) -> None:
     """
