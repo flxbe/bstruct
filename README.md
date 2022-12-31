@@ -5,7 +5,7 @@
 
 <!-- start elevator-pitch -->
 
-Simple and efficient binary parsing using regular type annotations.
+Simple and efficient binary parsing using type annotations.
 Supports easy fallback to Python's built-in `struct` library for maximum performance.
 
 <!-- end elevator-pitch -->
@@ -91,3 +91,8 @@ on a MacBook Pro 2018 with a 2.3GHz i5 processor.
 | -------------------- | ------- | ------- |
 | bstruct              | 6.30 us | 4.47 us |
 | construct (compiled) | 29.2 us | 29.2 us |
+
+## Issues and Contributing
+
+I am very happy to receive any kind of feedback or contribution.
+Just open an issue and let me know.
