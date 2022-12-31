@@ -48,6 +48,15 @@ def _raw_decode(iterator: Iterator[Any], _byteorder: ByteOrder) -> Any:
 
 
 class _StructEncoding(Generic[T]):
+    __slots__ = [
+        "format",
+        "le_struct",
+        "be_struct",
+        "size",
+        "decode",
+        "encode",
+    ]
+
     def __init__(
         self,
         format: str,
@@ -80,6 +89,12 @@ class _StructEncoding(Generic[T]):
 
 
 class _CustomEncoding(Generic[T]):
+    __slots__ = [
+        "format",
+        "decode",
+        "encode",
+    ]
+
     def __init__(
         self,
         format: str,
@@ -94,6 +109,12 @@ class _CustomEncoding(Generic[T]):
 class _NativeEncoding(Generic[T]):
     decode: Decoder[T]
     encode: Encoder[T]
+
+    __slots__ = [
+        "format",
+        "decode",
+        "encode",
+    ]
 
     def __init__(self, format: str):
         self.format = format
@@ -356,7 +377,7 @@ class Struct:
     """
     Inherit from this class to automatically derive the necessary
     decoding/encoding information.
-    Also transforms any subclasses into a Python dataclass.
+    Also transforms any subclass into a Python dataclass.
     """
 
     __bstruct_encoding__: ClassVar[_StructEncoding[Any]]
