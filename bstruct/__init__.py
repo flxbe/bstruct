@@ -11,6 +11,7 @@ from typing import (
     Literal,
     Annotated,
     ClassVar,
+    Iterable,
 )
 import typing
 from typing_extensions import dataclass_transform
@@ -428,8 +429,8 @@ S = TypeVar("S", bound=Struct)
 
 def decode(cls: type[S], data: bytes, byteorder: ByteOrder = "little") -> S:
     """
-    Decode an instance of `S` from the provided data.
-    The size of `data` must exactly match the size of `S`.
+    Decode an instance of `cls` from the provided data.
+    The size of `data` must exactly match the size of `cls`.
     """
     encoding = cls.__bstruct_encoding__
 
@@ -444,7 +445,7 @@ def decode_all(
     cls: type[S], data: bytes, byteorder: ByteOrder = "little"
 ) -> Iterator[S]:
     """
-    Decode multiple instances of `S`.
+    Decode multiple instances of `cls`.
     The size of `data` must be an integer multiple of the size of `S`.
     """
     encoding = cls.__bstruct_encoding__
@@ -458,21 +459,27 @@ def decode_all(
         raise BstructError(str(error)) from error
 
 
-def decode_from(
-    cls: type[S], data_stream: BufferedIOBase, byteorder: ByteOrder = "little"
-) -> S:
+def read(cls: type[S], buffer: BufferedIOBase, byteorder: ByteOrder = "little") -> S:
     """
-    Read and decode an instance of `S` from the data stream.
+    Read and decode an instance of `cls` from the `buffer`.
     """
-    encoding = cls.__bstruct_encoding__
+    data = buffer.read(cls.__bstruct_encoding__.size)
+    return decode(cls, data, byteorder)
 
-    data = data_stream.read(encoding.size)
 
-    try:
-        raw_attributes = encoding.get_struct(byteorder).unpack(data)
-        return encoding.decode(iter(raw_attributes), byteorder)
-    except _StructError as error:
-        raise BstructError(str(error)) from error
+def read_many(
+    cls: type[S],
+    buffer: BufferedIOBase,
+    count: int,
+    byteorder: ByteOrder = "little",
+) -> Iterator[S]:
+    """
+    Read and decode `count` instances of `cls` from the `buffer`.
+    """
+    size = cls.__bstruct_encoding__.size
+    data = buffer.read(size * count)
+
+    return decode_all(cls, data, byteorder)
 
 
 def encode(value: Struct, byteorder: ByteOrder = "little") -> bytes:
@@ -488,6 +495,27 @@ def encode(value: Struct, byteorder: ByteOrder = "little") -> bytes:
         return encoding.get_struct(byteorder).pack(*raw_attributes)
     except _StructError as error:
         raise BstructError(str(error)) from error
+
+
+def write(
+    value: Struct, buffer: BufferedIOBase, byteorder: ByteOrder = "little"
+) -> None:
+    """
+    Encode and write `value` into the `buffer`.
+    """
+    data = encode(value, byteorder)
+    buffer.write(data)
+
+
+def write_all(
+    items: Iterable[Struct], buffer: BufferedIOBase, byteorder: ByteOrder = "little"
+) -> None:
+    """
+    Encode and write all `items` into the `buffer`.
+    """
+    for item in items:
+        data = encode(item, byteorder)
+        buffer.write(data)
 
 
 def get_struct(cls: type[Struct], byteorder: ByteOrder = "little") -> _Struct:
