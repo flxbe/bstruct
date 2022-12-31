@@ -6,7 +6,7 @@ authors = ["flxbe <flxbe@mailbox.org>"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/flxbe/bstruct"
-documentation = "https://bstruct.readthedocs.io/en/latest/"
+documentation = "https://bstruct.readthedocs.io"
 
 [tool.poetry.urls]
 Changelog = "https://github.com/flxbe/bstruct/blob/main/CHANGELOG.md"
