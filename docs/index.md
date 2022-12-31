@@ -12,6 +12,7 @@
 
 quickstart
 supported_types
+dynamic
 patch
 native_struct
 api
