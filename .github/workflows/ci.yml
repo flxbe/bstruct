@@ -40,6 +40,11 @@ jobs:
       - name: Test
         run: poetry run pytest
 
+      - name: Execute examples in docs
+        run: |
+          cd docs
+          make doctest
+
   publish:
     needs: build
     if: startsWith(github.ref, 'refs/tags/')
