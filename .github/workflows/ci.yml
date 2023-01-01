@@ -40,10 +40,11 @@ jobs:
       - name: Test
         run: poetry run pytest
 
-      - name: Execute examples in docs
+      - name: Test Docs
         run: |
           cd docs
           poetry run make doctest
+          poetry run make html
 
   publish:
     needs: build
