@@ -43,7 +43,7 @@ jobs:
       - name: Execute examples in docs
         run: |
           cd docs
-          make doctest
+          poetry run make doctest
 
   publish:
     needs: build
