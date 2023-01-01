@@ -19,6 +19,7 @@ release = importlib.metadata.version("bstruct")
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
+    "sphinx.ext.doctest",
     "myst_parser",
     "sphinx_copybutton",
 ]

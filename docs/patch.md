@@ -1,6 +1,6 @@
 # Patch Existing Classes
 
-```python
+```{testcode}
 from dataclasses import dataclass
 
 import bstruct

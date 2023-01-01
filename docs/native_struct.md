@@ -1,8 +1,7 @@
 # Fallback to `struct.Struct`
 
-```python
+```{testcode}
 import bstruct
-
 
 class Data(bstruct.Struct):
     u8: bstruct.u8
@@ -14,7 +13,7 @@ native_struct = bstruct.get_struct(Data)
 It is also possible to use `bstruct` only as a convenience wrapper for creating the native `struct` format string.
 This of course only works for types supported by `struct`.
 
-```python
+```{testcode}
 import struct
 
 import bstruct

@@ -3,7 +3,11 @@
 Any `bstruct.Struct` can only describe data with a fixed layout.
 To make working with dynamic data layouts more convenient, the library supports writing to and reading from `bytes` buffers.
 
-```python
+```{testcode}
+---
+pyversion: ">= 3.10"
+---
+
 from io import BytesIO
 
 import bstruct

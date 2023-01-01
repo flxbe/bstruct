@@ -3,7 +3,7 @@
 The library uses Python'b builtin `Annotated` type to extend builtin types like
 `int` and `str` with the necessary information for (de)serialization.
 
-```python
+```{testcode}
 from typing import Annotated
 
 import bstruct
@@ -17,14 +17,14 @@ For convenience, there exist predefined constants where ever possible.
 
 ## Basic Types
 
-```python
+```{testcode}
 from typing import Annotated
 
 import bstruct
 
 
 class Data(bstruct.Struct):
-    b: bstruct.bool
+    b: bool
 
     u8: bstruct.u8
     u16: bstruct.u16
@@ -52,7 +52,7 @@ This works similar to extracting the raw value using `bytes`.
 However, any trailing `\0` bytes are removed when decoding a string value.
 During encoding, the value is filled with `\0` bytes or truncated to exactly match the specified length.
 
-```python
+```{testcode}
 from typing import Annotated
 
 import bstruct
@@ -66,7 +66,10 @@ class Data(bstruct.Struct):
 
 Custom `IntEnum` classes can be used the same way as `int`s.
 
-```python
+```{testcode}
+from enum import IntEnum
+from typing import Annotated
+
 import bstruct
 
 
@@ -74,18 +77,20 @@ class Type(IntEnum):
     A = 1
     B = 2
 
+
 class Data(bstruct.Struct):
     type: Annotated[Type, bstruct.Encodings.u8]
 ```
 
 ## Nested Classes
 
-```python
+```{testcode}
 import bstruct
 
 
 class Inner(bstruct.Struct):
     value: bstruct.u32
+
 
 class Outer(bstruct.Struct):
     value: Inner
@@ -95,7 +100,7 @@ class Outer(bstruct.Struct):
 
 Fixed sized arrays can be translated from/into Python lists.
 
-```python
+```{testcode}
 from typing import Annotated
 
 import bstruct
