@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Use `bstruct.derive` to create encodings for generic type expressions.
 - Add `read`, `read_many`, `write`, and `write_many`.
 - Make `CustomEncoding` public.
 
