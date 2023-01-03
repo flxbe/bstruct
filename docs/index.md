@@ -13,7 +13,7 @@
 quickstart
 supported_types
 dynamic
-patch
+custom
 native_struct
 api
 license

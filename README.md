@@ -32,7 +32,7 @@ class Item(bstruct.Struct):
     value: bstruct.i32       # shorthand for: Annotated[int, bstruct.Encodings.i32]
 
 class Sequence(bstruct.Struct):
-    items: Annotated[list[Item], bstruct.Length(3)]
+    items: Annotated[list[Item], bstruct.Array(3)]
 
 sequence = Sequence(
     items=[

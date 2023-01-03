@@ -12,7 +12,7 @@ def test_should_correctly_compile_the_format_string() -> None:
             bstruct.Encodings.i32,
             bstruct.Encodings.u64,
             bstruct.Encodings.i64,
-            bstruct.Encodings.bytes(size=16),
+            bstruct.Bytes(size=16),
         ]
     )
 

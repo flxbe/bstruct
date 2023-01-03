@@ -42,7 +42,7 @@ class Data(bstruct.Struct):
 
     i80f48: bstruct.I80F48
 
-    raw: Annotated[bytes, bstruct.Size(size=8)]
+    raw: Annotated[bytes, bstruct.Bytes(size=8)]
 ```
 
 ## Strings
@@ -59,7 +59,7 @@ import bstruct
 
 
 class Data(bstruct.Struct):
-    text: Annotated[str, bstruct.Size(size=8)]
+    text: Annotated[str, bstruct.String(size=8)]
 ```
 
 ## `IntEnum`
@@ -107,5 +107,5 @@ import bstruct
 
 
 class Data(bstruct.Struct):
-    items: Annotated[list[bstruct.u8], bstruct.Length(10)]
+    items: Annotated[list[bstruct.u8], bstruct.Array(10)]
 ```

@@ -1,5 +1,4 @@
 from typing import Annotated, NewType
-from dataclasses import dataclass
 from enum import IntEnum
 from decimal import Decimal
 
@@ -97,8 +96,8 @@ def test_should_encode_int_enums() -> None:
 
 def test_should_encode_strings() -> None:
     class TestData(bstruct.Struct):
-        v1: Annotated[str, bstruct.Size(size=11)]
-        v2: Annotated[str, bstruct.Size(size=20)]
+        v1: Annotated[str, bstruct.String(size=11)]
+        v2: Annotated[str, bstruct.String(size=20)]
 
     original = TestData(v1="hello world", v2="🎉")
 
@@ -110,7 +109,7 @@ def test_should_encode_strings() -> None:
 
 def test_should_encode_bytes() -> None:
     class TestData(bstruct.Struct):
-        v1: Annotated[bytes, bstruct.Size(size=11)]
+        v1: Annotated[bytes, bstruct.Bytes(size=11)]
 
     original = TestData(v1=b"hello world")
 
@@ -140,39 +139,6 @@ def test_should_encode_nested_classes() -> None:
     assert decoded == original
 
 
-def test_should_patch_external_classes() -> None:
-    @dataclass
-    class TestData:
-        u8: int
-        u16: int
-
-    def _decode_test_class(data: bytes, byteorder: bstruct.ByteOrder) -> TestData:
-        u8 = int.from_bytes(data[0:1], byteorder, signed=False)
-        u16 = int.from_bytes(data[1:3], byteorder, signed=False)
-
-        return TestData(u8, u16)
-
-    def _encode_test_class(value: TestData, byteorder: bstruct.ByteOrder) -> bytes:
-        b8 = value.u8.to_bytes(1, byteorder, signed=False)
-        b16 = value.u16.to_bytes(2, byteorder, signed=False)
-
-        return b8 + b16
-
-    bstruct.patch(
-        TestData, size=3, decode=_decode_test_class, encode=_encode_test_class
-    )
-
-    class Struct(bstruct.Struct):
-        value: TestData
-
-    original = Struct(TestData(u8=1, u16=2))
-
-    data = bstruct.encode(original)
-    decoded = bstruct.decode(Struct, data)
-
-    assert decoded == original
-
-
 def test_should_encode_I80F48() -> None:
     class TestData(bstruct.Struct):
         value: bstruct.I80F48
@@ -191,8 +157,8 @@ def test_should_encode_arrays() -> None:
         b: bstruct.u8
 
     class TestData(bstruct.Struct):
-        native_values: Annotated[list[bstruct.u8], bstruct.Length(5)]
-        custom_values: Annotated[list[TestItem], bstruct.Length(2)]
+        native_values: Annotated[list[bstruct.u8], bstruct.Array(5)]
+        custom_values: Annotated[list[TestItem], bstruct.Array(2)]
 
     original = TestData([1, 2, 3, 4, 5], custom_values=[TestItem(1, 2), TestItem(3, 4)])
 

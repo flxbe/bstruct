@@ -12,7 +12,7 @@ class BStructInner(bstruct.Struct):
 
 class BstructClass(bstruct.Struct):
     inner: BStructInner
-    items: Annotated[list[BStructInner], bstruct.Length(5)]
+    items: Annotated[list[BStructInner], bstruct.Array(5)]
 
 
 bstruct_class = BstructClass(

@@ -12,7 +12,7 @@ class Item(bstruct.Struct):
 
 
 class Sequence(bstruct.Struct):
-    items: Annotated[list[Item], bstruct.Length(3)]
+    items: Annotated[list[Item], bstruct.Array(3)]
 
 
 sequence = Sequence(

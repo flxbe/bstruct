@@ -6,7 +6,7 @@ import construct
 
 
 class BstructList(bstruct.Struct):
-    values: Annotated[list[bstruct.u8], bstruct.Length(10)]
+    values: Annotated[list[bstruct.u8], bstruct.Array(10)]
 
 
 bstruct_list = BstructList(

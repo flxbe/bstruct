@@ -10,7 +10,7 @@ class BstructItem(bstruct.Struct):
 
 
 class BstructList(bstruct.Struct):
-    values: Annotated[list[BstructItem], bstruct.Length(10)]
+    values: Annotated[list[BstructItem], bstruct.Array(10)]
 
 
 bstruct_list = BstructList(

@@ -21,7 +21,7 @@ import bstruct
 
 format_str = bstruct.compile_format([
     bstruct.Encodings.u8,
-    bstruct.Encodings.bytes(8),
+    bstruct.Bytes(8),
     bstruct.Encodings.i64
 ])
 

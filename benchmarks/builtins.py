@@ -10,8 +10,8 @@ class TestData(bstruct.Struct):
     u16: bstruct.u16
     u32: bstruct.u32
     u64: bstruct.u64
-    byte_data: Annotated[bytes, bstruct.Size(12)]
-    l: Annotated[list[bstruct.u8], bstruct.Length(5)]
+    byte_data: Annotated[bytes, bstruct.Bytes(12)]
+    l: Annotated[list[bstruct.u8], bstruct.Array(5)]
 
 
 EXPECTED = TestData(
