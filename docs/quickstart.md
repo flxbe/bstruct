@@ -7,25 +7,22 @@ from dataclasses import dataclass
 import bstruct
 
 
-@dataclass
-class Item:
-    identifier: bstruct.u64  # shorthand for: Annotated[int, bstruct.Encodings.u64]
-    value: bstruct.i32       # shorthand for: Annotated[int, bstruct.Encodings.i32]
+@dataclass(slots=True)
+class Measurement:
+    timestamp: bstruct.u32  # shorthand for: Annotated[int, bstruct.Encodings.u32]
+    values: Annotated[list[bstruct.u8], bstruct.Array(3)]
 
 
-ItemArray = Annotated[list[Item], bstruct.Array(3)]
-
-ItemArrayEncoding = bstruct.derive(ItemArray)
+MeasurementEncoding = bstruct.derive(Measurement)
 
 
-array = [
-    Item(identifier=0, value=-1),
-    Item(identifier=1, value=0),
-    Item(identifier=2, value=1),
-]
+measurement = Measurement(
+    timestamp=1672764049,
+    values=[1, 2, 3],
+)
 
-encoded = ItemArrayEncoding.encode(array)
-decoded = ItemArrayEncoding.decode(encoded)
+encoded = MeasurementEncoding.encode(measurement)
+decoded = MeasurementEncoding.decode(encoded)
 
-assert decoded == array
+assert decoded == measurement
 ```
