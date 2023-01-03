@@ -5,12 +5,17 @@ The library uses Python'b builtin `Annotated` type to extend builtin types like
 
 ```{testcode}
 from typing import Annotated
+from dataclasses import dataclass
 
 import bstruct
 
 
-class Data(bstruct.Struct):
+@dataclass(slots=True)
+class Data:
     value: Annotated[int, bstruct.Encodings.u64]
+
+
+DataEncoding = bstruct.derive(Data)
 ```
 
 For convenience, there exist predefined constants where ever possible.
@@ -19,11 +24,13 @@ For convenience, there exist predefined constants where ever possible.
 
 ```{testcode}
 from typing import Annotated
+from dataclasses import dataclass
 
 import bstruct
 
 
-class Data(bstruct.Struct):
+@dataclass(slots=True)
+class Data:
     b: bool
 
     u8: bstruct.u8
@@ -43,6 +50,9 @@ class Data(bstruct.Struct):
     i80f48: bstruct.I80F48
 
     raw: Annotated[bytes, bstruct.Bytes(size=8)]
+
+
+DataEncoding = bstruct.derive(Data)
 ```
 
 ## Strings
@@ -54,12 +64,17 @@ During encoding, the value is filled with `\0` bytes or truncated to exactly mat
 
 ```{testcode}
 from typing import Annotated
+from dataclasses import dataclass
 
 import bstruct
 
 
-class Data(bstruct.Struct):
+@dataclass(slots=True)
+class Data:
     text: Annotated[str, bstruct.String(size=8)]
+
+
+DataEncoding = bstruct.derive(Data)
 ```
 
 ## `IntEnum`
@@ -68,6 +83,7 @@ Custom `IntEnum` classes can be used the same way as `int`s.
 
 ```{testcode}
 from enum import IntEnum
+from dataclasses import dataclass
 from typing import Annotated
 
 import bstruct
@@ -78,22 +94,33 @@ class Type(IntEnum):
     B = 2
 
 
-class Data(bstruct.Struct):
+@dataclass(slots=True)
+class Data:
     type: Annotated[Type, bstruct.Encodings.u8]
+
+
+DataEncoding = bstruct.derive(Data)
 ```
 
 ## Nested Classes
 
 ```{testcode}
+from dataclasses import dataclass
+
 import bstruct
 
 
-class Inner(bstruct.Struct):
+@dataclass
+class Inner:
     value: bstruct.u32
 
 
-class Outer(bstruct.Struct):
+@dataclass
+class Outer:
     value: Inner
+
+
+OuterEncoding = bstruct.derive(Outer)
 ```
 
 ## Arrays
@@ -102,10 +129,15 @@ Fixed sized arrays can be translated from/into Python lists.
 
 ```{testcode}
 from typing import Annotated
+from dataclasses import dataclass
 
 import bstruct
 
 
-class Data(bstruct.Struct):
+@dataclass
+class Data:
     items: Annotated[list[bstruct.u8], bstruct.Array(10)]
+
+
+DataEncoding = bstruct.derive(Data)
 ```

@@ -1,43 +1,45 @@
 from typing import Annotated
+from dataclasses import dataclass
 
 import pyperf
 import bstruct
 import construct
 
 
-class BstructItem(bstruct.Struct):
+@dataclass(slots=True)
+class BstructItem:
     a: bstruct.u8
 
 
-class BstructList(bstruct.Struct):
-    values: Annotated[list[BstructItem], bstruct.Array(10)]
+BstructList = Annotated[list[BstructItem], bstruct.Array(10)]
 
 
-bstruct_list = BstructList(
-    values=[
-        BstructItem(1),
-        BstructItem(2),
-        BstructItem(3),
-        BstructItem(4),
-        BstructItem(5),
-        BstructItem(6),
-        BstructItem(7),
-        BstructItem(8),
-        BstructItem(9),
-        BstructItem(0),
-    ]
-)
+BstructListEncoding = bstruct.derive(BstructList)
 
 
-list_data = bstruct.encode(bstruct_list)
+bstruct_list = [
+    BstructItem(1),
+    BstructItem(2),
+    BstructItem(3),
+    BstructItem(4),
+    BstructItem(5),
+    BstructItem(6),
+    BstructItem(7),
+    BstructItem(8),
+    BstructItem(9),
+    BstructItem(0),
+]
 
 
-def _decode_bstruct() -> None:
-    bstruct.decode(BstructList, list_data)
+list_data = BstructListEncoding.encode(bstruct_list)
 
 
-def _encode_bstruct() -> None:
-    bstruct.encode(bstruct_list)
+def _decode_bstruct() -> BstructList:
+    return BstructListEncoding.decode(list_data)
+
+
+def _encode_bstruct() -> bytes:
+    return BstructListEncoding.encode(bstruct_list)
 
 
 ConstructItem = construct.Struct(

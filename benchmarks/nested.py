@@ -1,18 +1,24 @@
 from typing import Annotated
+from dataclasses import dataclass
 
 import pyperf
 import bstruct
 import construct
 
 
-class BStructInner(bstruct.Struct):
+@dataclass(slots=True)
+class BStructInner:
     a: bstruct.u64
     b: bstruct.u64
 
 
-class BstructClass(bstruct.Struct):
+@dataclass(slots=True)
+class BstructClass:
     inner: BStructInner
     items: Annotated[list[BStructInner], bstruct.Array(5)]
+
+
+BstructClassEncoding = bstruct.derive(BstructClass)
 
 
 bstruct_class = BstructClass(
@@ -27,15 +33,15 @@ bstruct_class = BstructClass(
 )
 
 
-data = bstruct.encode(bstruct_class)
+data = BstructClassEncoding.encode(bstruct_class)
 
 
-def _decode_bstruct() -> None:
-    bstruct.decode(BstructClass, data)
+def _decode_bstruct() -> BstructClass:
+    return BstructClassEncoding.decode(data)
 
 
-def _encode_bstruct() -> None:
-    bstruct.encode(bstruct_class)
+def _encode_bstruct() -> bytes:
+    return BstructClassEncoding.encode(bstruct_class)
 
 
 ConstructInner = construct.Struct(

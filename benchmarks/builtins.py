@@ -1,17 +1,22 @@
 from typing import Annotated
+from dataclasses import dataclass
 
 import pyperf
 import construct
 import bstruct
 
 
-class TestData(bstruct.Struct):
+@dataclass(slots=True)
+class TestData:
     u8: bstruct.u8
     u16: bstruct.u16
     u32: bstruct.u32
     u64: bstruct.u64
     byte_data: Annotated[bytes, bstruct.Bytes(12)]
     l: Annotated[list[bstruct.u8], bstruct.Array(5)]
+
+
+TestDataEncoding = bstruct.derive(TestData)
 
 
 EXPECTED = TestData(
@@ -23,18 +28,18 @@ EXPECTED = TestData(
     l=[1, 2, 3, 4, 5],
 )
 
-DATA = bstruct.encode(EXPECTED)
+DATA = TestDataEncoding.encode(EXPECTED)
 
 
 def _decode_bstruct() -> TestData:
-    return bstruct.decode(TestData, DATA)
+    return TestDataEncoding.decode(DATA)
 
 
 def _encode_bstruct() -> bytes:
-    return bstruct.encode(EXPECTED)
+    return TestDataEncoding.encode(EXPECTED)
 
 
-raw_struct = bstruct.get_struct(TestData)
+raw_struct = TestDataEncoding.get_struct("little")
 
 
 def _decode_struct() -> TestData:

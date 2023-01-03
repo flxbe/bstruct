@@ -7,30 +7,38 @@ To make working with dynamic data layouts more convenient, the library supports 
 ---
 pyversion: ">= 3.10"
 ---
-
 from io import BytesIO
+from dataclasses import dataclass
 
 import bstruct
 
 
-class Header(bstruct.Struct):
+@dataclass(slots=True)
+class Header:
     item_count: bstruct.u8
 
 
-class Item(bstruct.Struct):
+HeaderEncoding = bstruct.derive(Header)
+
+
+@dataclass(slots=True)
+class Item:
     value: bstruct.u8
 
 
-def decode(buffer: BytesIO) -> list[Item]:
-    header = bstruct.read(Header, buffer)
-    items = bstruct.read_many(Item, buffer, count=header.item_count)
+ItemEncoding = bstruct.derive(Item)
 
-    return items
+
+def decode(buffer: BytesIO) -> list[Item]:
+    header = HeaderEncoding.read(buffer)
+    items = ItemEncoding.read_many(buffer, count=header.item_count)
+
+    return list(items)
 
 
 def encode(items: list[Item], buffer: BytesIO) -> None:
-    bstruct.write(Header(len(items)), buffer)
-    bstruct.write_many(items, buffer)
+    HeaderEncoding.write(Header(len(items)), buffer)
+    ItemEncoding.write_many(items, buffer)
 
 
 items = [Item(i) for i in range(100)]
@@ -39,7 +47,7 @@ items = [Item(i) for i in range(100)]
 buffer = BytesIO()
 encode(items, buffer)
 
-# Reset buffer to the start so the decode function has something to read.
+# Reset buffer to the start, so the decode function has something to read.
 buffer.seek(0)
 decoded = decode(buffer)
 

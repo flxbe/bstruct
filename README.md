@@ -24,26 +24,30 @@ pip install bstruct
 
 ```python
 from typing import Annotated
+from dataclasses import dataclass
+
 import bstruct
 
 
-class Item(bstruct.Struct):
+@dataclass
+class Item:
     identifier: bstruct.u64  # shorthand for: Annotated[int, bstruct.Encodings.u64]
     value: bstruct.i32       # shorthand for: Annotated[int, bstruct.Encodings.i32]
 
-class Sequence(bstruct.Struct):
-    items: Annotated[list[Item], bstruct.Array(3)]
 
-sequence = Sequence(
-    items=[
-        Item(identifier=0, value=-1),
-        Item(identifier=1, value=0),
-        Item(identifier=2, value=1),
-    ]
-)
+ItemArray = Annotated[list[Item], bstruct.Array(3)]
 
-encoded = bstruct.encode(sequence)
-decoded = bstruct.decode(Sequence, encoded)
+ItemArrayEncoding = bstruct.derive(ItemArray)
+
+
+array = [
+    Item(identifier=0, value=-1),
+    Item(identifier=1, value=0),
+    Item(identifier=2, value=1),
+]
+
+encoded = ItemArrayEncoding.encode(array)
+decoded = ItemArrayEncoding.decode(encoded)
 
 assert decoded == sequence
 ```

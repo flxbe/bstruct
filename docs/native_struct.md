@@ -1,13 +1,20 @@
 # Fallback to `struct.Struct`
 
 ```{testcode}
+from dataclasses import dataclass
+
 import bstruct
 
-class Data(bstruct.Struct):
+
+@dataclass
+class Data:
     u8: bstruct.u8
     u16: bstruct.u16
 
-native_struct = bstruct.get_struct(Data)
+
+DataEncoding = bstruct.derive(Data)
+
+native_struct = DataEncoding.get_struct(byteorder="little")
 ```
 
 It is also possible to use `bstruct` only as a convenience wrapper for creating the native `struct` format string.

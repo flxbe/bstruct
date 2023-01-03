@@ -55,15 +55,13 @@ RangeEncoding = bstruct.CustomEncoding.create(
     encode=encode_range,
 )
 
-class Struct(bstruct.Struct):
-    range: Annotated[Range, RangeEncoding]
 
-struct = Struct(range=Range(1, 2))
-data = bstruct.encode(struct)
+range = Range(1, 2)
+data = RangeEncoding.encode(range)
 
 assert data == b"\x01\x02"
 
-decoded = bstruct.decode(Struct, data)
-assert decoded.range.start == 1
-assert decoded.range.end == 2
+decoded = RangeEncoding.decode(data)
+assert decoded.start == 1
+assert decoded.end == 2
 ```

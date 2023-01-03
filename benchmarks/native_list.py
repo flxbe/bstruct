@@ -5,26 +5,28 @@ import bstruct
 import construct
 
 
-class BstructList(bstruct.Struct):
-    values: Annotated[list[bstruct.u8], bstruct.Array(10)]
+BstructList = Annotated[list[bstruct.u8], bstruct.Array(10)]
+
+BstructListEncoding = bstruct.derive(BstructList)
 
 
-bstruct_list = BstructList(
-    values=[1, 2, 3, 4, 5, 6, 7, 8, 9, 0],
-)
+bstruct_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
 
-list_data = bstruct.encode(bstruct_list)
+list_data = BstructListEncoding.encode(bstruct_list)
 
 
-def _decode_bstruct() -> None:
-    bstruct.decode(BstructList, list_data)
+def _decode_bstruct() -> BstructList:
+    return BstructListEncoding.decode(list_data)
 
 
-def _encode_bstruct() -> None:
-    bstruct.encode(bstruct_list)
+assert _decode_bstruct() == bstruct_list
 
 
-raw_struct = bstruct.get_struct(BstructList)
+def _encode_bstruct() -> bytes:
+    return BstructListEncoding.encode(bstruct_list)
+
+
+raw_struct = BstructListEncoding.get_struct("little")
 raw_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
 
 
