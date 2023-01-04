@@ -2,7 +2,6 @@ from __future__ import annotations
 from io import BufferedIOBase
 from typing import (
     Any,
-    Sequence,
     NewType,
     Union,
     Generic,
@@ -28,23 +27,23 @@ class BstructError(Exception):
     pass
 
 
-T = TypeVar("T")
-
 ByteOrder = Literal["big", "little"]
-Attribute = Union[bool, bytes, int]
-AttributeIterator = Iterator[Attribute]
-AttributeList = list[Attribute]
 
-Decoder = Callable[[AttributeIterator, ByteOrder], T]
-Encoder = Callable[[T, AttributeList, ByteOrder], None]
+NativeValue = Union[bool, bytes, int]
+ValueIterator = Iterator[NativeValue]
+ValueList = list[NativeValue]
+
+T = TypeVar("T")
+Decoder = Callable[[ValueIterator, ByteOrder], T]
+Encoder = Callable[[T, ValueList, ByteOrder], None]
 
 
-def _raw_encode(value: Any, attributes: AttributeList, _byte_order: ByteOrder) -> None:
+def _raw_encode(value: Any, attributes: ValueList, _byte_order: ByteOrder) -> None:
     attributes.append(value)
 
 
-def _raw_decode(iterator: AttributeIterator, _byteorder: ByteOrder) -> Any:
-    return next(iterator)
+def _raw_decode(attributes: ValueIterator, _byteorder: ByteOrder) -> Any:
+    return next(attributes)
 
 
 class Encoding(Generic[T]):
@@ -178,7 +177,7 @@ class Bytes(_NativeEncoding[bytes]):
         super().__init__(bytes, f"{size}s")
 
 
-def compile_format(fields: Sequence[_NativeEncoding[Any]]) -> str:
+def compile_format(fields: Iterable[_NativeEncoding[Any]]) -> str:
     """
     Compile a list of attribute descriptions into a `struct.Struct` format string.
     This does not contain the byteorder specifier (e.g. `<` or `>`).
@@ -212,7 +211,7 @@ class CustomEncoding(Encoding[T]):
     @staticmethod
     def create(
         target: type[T],
-        fields: Sequence[_NativeEncoding[Any]],
+        fields: Iterable[_NativeEncoding[Any]],
         decode: Decoder[T],
         encode: Encoder[T],
     ) -> CustomEncoding[T]:
@@ -234,54 +233,50 @@ class String(CustomEncoding[str]):
         )
 
 
-def _decode_str(attributes: AttributeIterator, _byteorder: ByteOrder) -> str:
+def _decode_str(attributes: ValueIterator, _byteorder: ByteOrder) -> str:
     value = next(attributes)
     assert isinstance(value, bytes)
 
     return value.rstrip(b"\0").decode("utf-8")
 
 
-def _encode_str(value: str, attributes: AttributeList, _byteorder: ByteOrder) -> None:
+def _encode_str(value: str, attributes: ValueList, _byteorder: ByteOrder) -> None:
     # The `struct` library automatically adds zeros to the end of
     # the encoded string to fill the necessary `data.size` bytes.
     data = value.encode("utf-8")
     attributes.append(data)
 
 
-def _decode_uint(attributes: AttributeIterator, byteorder: ByteOrder) -> int:
+def _decode_uint(attributes: ValueIterator, byteorder: ByteOrder) -> int:
     value = next(attributes)
     assert isinstance(value, bytes)
 
     return int.from_bytes(value, byteorder, signed=False)
 
 
-def _encode_uint128(
-    value: int, attributes: AttributeList, byteorder: ByteOrder
-) -> None:
+def _encode_uint128(value: int, attributes: ValueList, byteorder: ByteOrder) -> None:
     data = value.to_bytes(16, byteorder, signed=False)
     attributes.append(data)
 
 
-def _encode_uint256(
-    value: int, attributes: AttributeList, byteorder: ByteOrder
-) -> None:
+def _encode_uint256(value: int, attributes: ValueList, byteorder: ByteOrder) -> None:
     data = value.to_bytes(32, byteorder, signed=False)
     attributes.append(data)
 
 
-def _decode_int(attributes: AttributeIterator, byteorder: ByteOrder) -> int:
+def _decode_int(attributes: ValueIterator, byteorder: ByteOrder) -> int:
     value = next(attributes)
     assert isinstance(value, bytes)
 
     return int.from_bytes(value, byteorder, signed=True)
 
 
-def _encode_int128(value: int, attributes: AttributeList, byteorder: ByteOrder) -> None:
+def _encode_int128(value: int, attributes: ValueList, byteorder: ByteOrder) -> None:
     data = value.to_bytes(16, byteorder, signed=True)
     attributes.append(data)
 
 
-def _encode_int256(value: int, attributes: AttributeList, byteorder: ByteOrder) -> None:
+def _encode_int256(value: int, attributes: ValueList, byteorder: ByteOrder) -> None:
     data = value.to_bytes(32, byteorder, signed=True)
     attributes.append(data)
 
@@ -291,7 +286,7 @@ def _encode_int256(value: int, attributes: AttributeList, byteorder: ByteOrder) 
 I80F48_DIVISOR = Decimal(2**48)
 
 
-def _decode_I80F48(attributes: AttributeIterator, byte_order: ByteOrder) -> Decimal:
+def _decode_I80F48(attributes: ValueIterator, byte_order: ByteOrder) -> Decimal:
     value = next(attributes)
     assert isinstance(value, bytes)
 
@@ -299,7 +294,7 @@ def _decode_I80F48(attributes: AttributeIterator, byte_order: ByteOrder) -> Deci
 
 
 def _encode_I80F48(
-    value: Decimal, attributes: AttributeList, byte_order: ByteOrder
+    value: Decimal, attributes: ValueList, byte_order: ByteOrder
 ) -> None:
     data = int(value * I80F48_DIVISOR).to_bytes(16, byte_order, signed=True)
     attributes.append(data)
@@ -385,7 +380,7 @@ def derive(
 
 
 def _encode_native_list(
-    l: list[Attribute], attributes: AttributeList, _byteorder: ByteOrder
+    l: list[NativeValue], attributes: ValueList, _byteorder: ByteOrder
 ) -> None:
     attributes.extend(l)
 
@@ -482,7 +477,7 @@ def _resolve_dataclass_encoding(cls: type[T]) -> CustomEncoding[T]:
 
     attribute_names = [field.name for field in fields]
 
-    def _decode(raw_attributes: AttributeIterator, byteorder: ByteOrder) -> T:
+    def _decode(raw_attributes: ValueIterator, byteorder: ByteOrder) -> T:
         attributes = [
             decode_attribute(raw_attributes, byteorder)
             for decode_attribute in attribute_decoders
@@ -490,7 +485,7 @@ def _resolve_dataclass_encoding(cls: type[T]) -> CustomEncoding[T]:
 
         return cls(*attributes)
 
-    def _encode(value: T, raw_attributes: AttributeList, byteorder: ByteOrder) -> None:
+    def _encode(value: T, raw_attributes: ValueList, byteorder: ByteOrder) -> None:
         for encode_attribute, name in zip(attribute_encoders, attribute_names):
             attribute = getattr(value, name)
             encode_attribute(attribute, raw_attributes, byteorder)

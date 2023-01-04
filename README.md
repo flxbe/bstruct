@@ -2,6 +2,7 @@
 
 [![ci](https://github.com/flxbe/bstruct/actions/workflows/ci.yml/badge.svg)](https://github.com/flxbe/bstruct/actions/workflows/ci.yml)
 [![pypi](https://img.shields.io/pypi/v/bstruct)](https://pypi.org/project/bstruct/)
+[![python](https://img.shields.io/pypi/pyversions/bstruct)](https://img.shields.io/pypi/pyversions/bstruct)
 
 <!-- start elevator-pitch -->
 
@@ -9,10 +10,6 @@ Simple and efficient binary parsing using type annotations.
 Supports easy fallback to Python's built-in `struct` library for maximum performance.
 
 <!-- end elevator-pitch -->
-
-## ⚠️ DISCLAIMER
-
-This project is still a work in progress. Use at your own risk.
 
 ## Getting Started
 

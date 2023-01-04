@@ -30,7 +30,7 @@ class Range:
 
 
 def decode_range(
-    attributes: bstruct.AttributeIterator, _byteorder: bstruct.ByteOrder
+    attributes: bstruct.ValueIterator, _byteorder: bstruct.ByteOrder
 ) -> Range:
     start = next(attributes)
     assert isinstance(start, int)
@@ -42,7 +42,7 @@ def decode_range(
 
 
 def encode_range(
-    value: Range, attributes: bstruct.AttributeList, _byteorder: bstruct.ByteOrder
+    value: Range, attributes: bstruct.ValueList, _byteorder: bstruct.ByteOrder
 ) -> None:
     attributes.append(value.start)
     attributes.append(value.end)
