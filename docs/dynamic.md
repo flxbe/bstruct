@@ -1,12 +1,9 @@
 # Dynamic Data
 
-Any `bstruct.Struct` can only describe data with a fixed layout.
+Any `bstruct.Encoding[T]` can only describe data with a fixed layout.
 To make working with dynamic data layouts more convenient, the library supports writing to and reading from `bytes` buffers.
 
 ```{testcode}
----
-pyversion: ">= 3.10"
----
 from io import BytesIO
 from dataclasses import dataclass
 
