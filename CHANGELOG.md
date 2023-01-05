@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2022-01-05
+
 ### Added
 
-- Use `bstruct.derive` to create encodings for generic type expressions.
+- Introduce `bstruct.derive` to create encodings for generic type expressions.
 - Add `read`, `read_many`, `write`, and `write_many`.
 - Make `CustomEncoding` public.
 - Add support for Python 3.9.
@@ -33,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Use `bstruct.Struct` baseclass instead of the decorator `bstruct.derive`
 
-[unreleased]: https://github.com/flxbe/bstruct/compare/v0.4.0...HEAD
+[unreleased]: https://github.com/flxbe/bstruct/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/flxbe/bstruct/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/flxbe/bstruct/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/flxbe/bstruct/compare/v0.2.0...v0.3.0
