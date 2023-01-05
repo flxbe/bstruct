@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "bstruct"
 version = "0.4.0"
-description = "Simple and efficient binary (de)serialization using regular type annotations."
+description = "Simple and efficient binary (de)serialization using type annotations."
 authors = ["flxbe <flxbe@mailbox.org>"]
 license = "MIT"
 readme = "README.md"
