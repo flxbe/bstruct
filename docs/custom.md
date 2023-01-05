@@ -51,8 +51,8 @@ def encode_range(
 RangeEncoding = bstruct.CustomEncoding.create(
     target=Range,
     fields=Range.FIELDS,
-    decode=decode_range,
-    encode=encode_range,
+    decode_attributes=decode_range,
+    encode_attributes=encode_range,
 )
 
 

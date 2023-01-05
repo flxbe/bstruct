@@ -195,25 +195,28 @@ class CustomEncoding(Encoding[T]):
         self,
         target: type[T],
         format: str,
-        decode: Decoder[T],
-        encode: Encoder[T],
+        decode_attributes: Decoder[T],
+        encode_attributes: Encoder[T],
     ):
         super().__init__(
-            target, format, decode_attributes=decode, encode_attributes=encode
+            target,
+            format,
+            decode_attributes=decode_attributes,
+            encode_attributes=encode_attributes,
         )
 
     @staticmethod
     def create(
         target: type[T],
         fields: Iterable[_NativeEncoding[Any]],
-        decode: Decoder[T],
-        encode: Encoder[T],
+        decode_attributes: Decoder[T],
+        encode_attributes: Encoder[T],
     ) -> CustomEncoding[T]:
         return CustomEncoding(
             target,
             format=compile_format(fields),
-            decode=decode,
-            encode=encode,
+            decode_attributes=decode_attributes,
+            encode_attributes=encode_attributes,
         )
 
 
@@ -222,8 +225,8 @@ class String(CustomEncoding[str]):
         super().__init__(
             target=str,
             format=Bytes(size).format,
-            decode=_decode_str,
-            encode=_encode_str,
+            decode_attributes=_decode_str,
+            encode_attributes=_encode_str,
         )
 
 
@@ -302,10 +305,16 @@ class Encodings:
     u32 = _NativeEncoding(int, format="I")
     u64 = _NativeEncoding(int, format="Q")
     u128 = CustomEncoding.create(
-        int, fields=[Bytes(16)], decode=_decode_uint, encode=_encode_uint128
+        int,
+        fields=[Bytes(16)],
+        decode_attributes=_decode_uint,
+        encode_attributes=_encode_uint128,
     )
     u256 = CustomEncoding.create(
-        int, fields=[Bytes(32)], decode=_decode_uint, encode=_encode_uint256
+        int,
+        fields=[Bytes(32)],
+        decode_attributes=_decode_uint,
+        encode_attributes=_encode_uint256,
     )
 
     i8 = _NativeEncoding(int, format="b")
@@ -313,17 +322,23 @@ class Encodings:
     i32 = _NativeEncoding(int, format="i")
     i64 = _NativeEncoding(int, format="q")
     i128 = CustomEncoding.create(
-        int, fields=[Bytes(16)], decode=_decode_int, encode=_encode_int128
+        int,
+        fields=[Bytes(16)],
+        decode_attributes=_decode_int,
+        encode_attributes=_encode_int128,
     )
     i256 = CustomEncoding.create(
-        int, fields=[Bytes(32)], decode=_decode_int, encode=_encode_int256
+        int,
+        fields=[Bytes(32)],
+        decode_attributes=_decode_int,
+        encode_attributes=_encode_int256,
     )
 
     I80F48 = CustomEncoding.create(
         Decimal,
         fields=[Bytes(16)],
-        decode=_decode_I80F48,
-        encode=_encode_I80F48,
+        decode_attributes=_decode_I80F48,
+        encode_attributes=_encode_I80F48,
     )
 
 
@@ -429,8 +444,8 @@ def _resolve_int_enum_encoding(cls: type[I], metadata: list[Any]) -> CustomEncod
     return CustomEncoding(
         cls,
         format=inner_encoding.format,
-        decode=lambda a, b: cls(inner_encoding.decode_attributes(a, b)),
-        encode=inner_encoding.encode_attributes,
+        decode_attributes=lambda a, b: cls(inner_encoding.decode_attributes(a, b)),
+        encode_attributes=inner_encoding.encode_attributes,
     )
 
 
@@ -480,6 +495,6 @@ def _resolve_dataclass_encoding(cls: type[T]) -> CustomEncoding[T]:
     return CustomEncoding(
         cls,
         format=full_format,
-        decode=_decode,
-        encode=_encode,
+        decode_attributes=_decode,
+        encode_attributes=_encode,
     )
