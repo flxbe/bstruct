@@ -11,7 +11,7 @@
 :maxdepth: 2
 
 quickstart
-supported_types
+basics
 dynamic
 custom
 native_struct

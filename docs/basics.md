@@ -1,26 +1,49 @@
-# Supported Types
+# Basics
 
-The library uses Python'b builtin `Annotated` type to extend builtin types like
-`int` and `str` with the necessary information for (de)serialization.
+The core of the library is the function `bstruct.derive`:
 
-```{testcode}
-from typing import Annotated
-from dataclasses import dataclass
-
-import bstruct
-
-
-@dataclass(slots=True)
-class Data:
-    value: Annotated[int, bstruct.Encodings.u64]
-
-
-DataEncoding = bstruct.derive(Data)
+```python
+bstruct.derive(value_type: type[T]) -> bstruct.Encoding[T]
 ```
 
-For convenience, there exist predefined constants where ever possible.
+It takes a type and tries to derive a binary encoding.
+The encoding can then be used to translate between an instance of `T` and
+the binary representation.
 
-## Basic Types
+The native Python types usually do not provide enough information to derive
+the binary encoding.
+The only exception is the `bool` type.
+For example, an `int` could be encoded as a 32-bit signed integer or a 64-bit
+unsigned integer.
+To add the missing information, the native types in Python can
+be `Annotated` with metadata.
+
+```{testcode}
+from typing import Annotated
+
+import bstruct
+
+
+u8 = Annotated[int, bstruct.Encodings.u8]
+
+IntEncoding = bstruct.derive(u8)
+
+print(IntEncoding.encode(1))
+```
+
+```{testoutput}
+b'\x01'
+```
+
+By annotating a type with an encoding, `bstruct.derive` has all the necessary information
+to derive the correct binary format.
+In addition, the annotations are transparent during runtime and for type checkers.
+Please notice that in practice you could use `bstruct.Encodings.u8` directly, as this is
+identical to the created `IntEncoding` in this simple example.
+
+To support more complex data types, the library can automatically derive the encoding
+for a dataclass, as long as every attribute contains enough metadata for `bstruct.derive`.
+For convenience, there exist predefined constants for the most common types.
 
 ```{testcode}
 from typing import Annotated
@@ -29,11 +52,11 @@ from dataclasses import dataclass
 import bstruct
 
 
-@dataclass(slots=True)
+@dataclass
 class Data:
     b: bool
 
-    u8: bstruct.u8
+    u8: bstruct.u8  # Annotated[int, bstruct.Encodings.u8]
     u16: bstruct.u16
     u32: bstruct.u32
     u64: bstruct.u64
@@ -55,7 +78,7 @@ class Data:
 DataEncoding = bstruct.derive(Data)
 ```
 
-## Strings
+### Strings
 
 It is possible to work directly with utf-8 encoded strings.
 This works similar to extracting the raw value using `bytes`.
@@ -69,7 +92,7 @@ from dataclasses import dataclass
 import bstruct
 
 
-@dataclass(slots=True)
+@dataclass
 class Data:
     text: Annotated[str, bstruct.String(size=8)]
 
@@ -77,7 +100,7 @@ class Data:
 DataEncoding = bstruct.derive(Data)
 ```
 
-## `IntEnum`
+### `IntEnum`
 
 Custom `IntEnum` classes can be used the same way as `int`s.
 
@@ -94,7 +117,7 @@ class Type(IntEnum):
     B = 2
 
 
-@dataclass(slots=True)
+@dataclass
 class Data:
     type: Annotated[Type, bstruct.Encodings.u8]
 
@@ -102,7 +125,7 @@ class Data:
 DataEncoding = bstruct.derive(Data)
 ```
 
-## Nested Classes
+### Nested Classes
 
 ```{testcode}
 from dataclasses import dataclass
@@ -123,7 +146,7 @@ class Outer:
 OuterEncoding = bstruct.derive(Outer)
 ```
 
-## Arrays
+### Arrays
 
 Fixed sized arrays can be translated from/into Python lists.
 
@@ -134,10 +157,7 @@ from dataclasses import dataclass
 import bstruct
 
 
-@dataclass
-class Data:
-    items: Annotated[list[bstruct.u8], bstruct.Array(10)]
-
+Data = Annotated[list[bstruct.u8], bstruct.Array(10)]
 
 DataEncoding = bstruct.derive(Data)
 ```

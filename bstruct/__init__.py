@@ -166,11 +166,6 @@ class _NativeEncoding(Encoding[T]):
         )
 
 
-class _IntEncoding(_NativeEncoding[int]):
-    def __init__(self, format: str):
-        super().__init__(int, format)
-
-
 class Bytes(_NativeEncoding[bytes]):
     def __init__(self, size: int):
         assert size > 0
@@ -303,10 +298,10 @@ def _encode_I80F48(
 class Encodings:
     bool: _NativeEncoding[bool] = _NativeEncoding(bool, format="?")
 
-    u8 = _IntEncoding("B")
-    u16 = _IntEncoding(format="H")
-    u32 = _IntEncoding(format="I")
-    u64 = _IntEncoding(format="Q")
+    u8 = _NativeEncoding(int, "B")
+    u16 = _NativeEncoding(int, format="H")
+    u32 = _NativeEncoding(int, format="I")
+    u64 = _NativeEncoding(int, format="Q")
     u128 = CustomEncoding.create(
         int, fields=[Bytes(16)], decode=_decode_uint, encode=_encode_uint128
     )
@@ -314,10 +309,10 @@ class Encodings:
         int, fields=[Bytes(32)], decode=_decode_uint, encode=_encode_uint256
     )
 
-    i8 = _IntEncoding(format="b")
-    i16 = _IntEncoding(format="h")
-    i32 = _IntEncoding(format="i")
-    i64 = _IntEncoding(format="q")
+    i8 = _NativeEncoding(int, format="b")
+    i16 = _NativeEncoding(int, format="h")
+    i32 = _NativeEncoding(int, format="i")
+    i64 = _NativeEncoding(int, format="q")
     i128 = CustomEncoding.create(
         int, fields=[Bytes(16)], decode=_decode_int, encode=_encode_int128
     )
@@ -350,7 +345,11 @@ i256 = Annotated[int, Encodings.i256]
 I80F48 = Annotated[Decimal, Encodings.I80F48]
 
 
-def derive(
+def derive(attribute_type: type[T]) -> Encoding[T]:
+    return _derive(attribute_type)
+
+
+def _derive(
     attribute_type: Any,
 ) -> Encoding[Any]:
     if isinstance(attribute_type, str):
