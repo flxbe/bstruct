@@ -264,3 +264,61 @@ def test_should_fail_for_wrong_data_size() -> None:
 
     with pytest.raises(bstruct.BstructError):
         encoding.decode(data)
+
+
+def test_should_fail_for_missing_annotation() -> None:
+    @dataclass
+    class Struct:
+        value: int
+
+    with pytest.raises(TypeError) as exc_info:
+        bstruct.derive(Struct)
+
+    assert str(exc_info.value) == "Missing annotation for type int"
+
+
+def test_should_fail_for_missing_encoding() -> None:
+    @dataclass
+    class Struct:
+        value: Annotated[int, "some_annotation"]
+
+    with pytest.raises(TypeError) as exc_info:
+        bstruct.derive(Struct)
+
+    assert str(exc_info.value) == "Cannot find encoding for type int"
+
+
+def test_should_fail_for_wrong_encoding() -> None:
+    @dataclass
+    class Struct:
+        value: Annotated[str, bstruct.Encodings.u8]
+
+    with pytest.raises(TypeError) as exc_info:
+        bstruct.derive(Struct)
+
+    assert (
+        str(exc_info.value)
+        == "Wrong encoding: Expected Encoding[str], got Encoding[int]"
+    )
+
+
+def test_should_fail_for_missing_list_type() -> None:
+    @dataclass
+    class Struct:
+        items: Annotated[list, bstruct.Array(3)]  # type: ignore
+
+    with pytest.raises(TypeError) as exc_info:
+        bstruct.derive(Struct)
+
+    assert str(exc_info.value) == "list is missing inner type"
+
+
+def test_should_fail_for_missing_array_length() -> None:
+    @dataclass
+    class Struct:
+        items: Annotated[list[bstruct.u8], "some_annotation"]
+
+    with pytest.raises(TypeError) as exc_info:
+        bstruct.derive(Struct)
+
+    assert str(exc_info.value) == "Cannot find length annotation for list"

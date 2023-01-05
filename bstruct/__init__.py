@@ -20,6 +20,7 @@ from typing import (
     Union,
 )
 
+
 __version__ = "0.4.0"
 
 
@@ -382,13 +383,13 @@ def _derive(
         if inspect.isclass(annotated_type) and issubclass(annotated_type, IntEnum):
             return _resolve_int_enum_encoding(annotated_type, annotation_args)
         elif annotated_type is list:
-            raise TypeError("Inner type for list needed.")
+            raise TypeError("list is missing inner type")
         elif typing.get_origin(annotated_type) is list:
             return _resolve_array_encoding(annotated_type, annotation_args)
         else:
             return _resolve_simple_encoding(annotated_type, annotation_args)
-
-    assert False
+    else:
+        raise TypeError(f"Missing annotation for type {attribute_type.__name__}")
 
 
 def _encode_native_list(
@@ -457,12 +458,12 @@ def _resolve_simple_encoding(target: type[T], metadata: list[Any]) -> Encoding[T
 
             if data.target is not target:
                 raise TypeError(
-                    f"Wrong encoding: Expected Encoding[{data}], got `Encoding[{data.target}]`"
+                    f"Wrong encoding: Expected Encoding[{target.__name__}], got Encoding[{data.target.__name__}]"
                 )
             else:
                 return data
 
-    raise TypeError(f"Cannot find type annotation for type {target}")
+    raise TypeError(f"Cannot find encoding for type {target.__name__}")
 
 
 def _resolve_dataclass_encoding(cls: type[T]) -> CustomEncoding[T]:
