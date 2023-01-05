@@ -63,7 +63,7 @@ jobs:
         run: python -m pip install poetry
 
       - name: Install dependencies
-        run: poetry install --without dev
+        run: poetry install --without dev,test
 
       - name: Build
         run: poetry build

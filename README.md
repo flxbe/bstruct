@@ -6,7 +6,7 @@
 
 <!-- start elevator-pitch -->
 
-Simple and efficient binary parsing using type annotations.
+Simple and efficient binary (de)serialization using type annotations.
 Supports easy fallback to Python's built-in `struct` library for maximum performance.
 
 <!-- end elevator-pitch -->
