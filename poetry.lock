@@ -922,7 +922,7 @@ files = [
 name = "typing-extensions"
 version = "4.4.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -950,4 +950,4 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "29f269e50f26f848b49a38a2ae81b7e115a259b0dc098f8b920f05d042f11f02"
+content-hash = "664858bd5f7e35582c7fb269ef04cb26e668d29015f7e4f6df6ab26f9542879b"
