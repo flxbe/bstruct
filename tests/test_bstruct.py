@@ -1,4 +1,4 @@
-from typing import Annotated, NewType
+from typing import Annotated
 from dataclasses import dataclass
 from enum import IntEnum
 from decimal import Decimal
@@ -220,23 +220,6 @@ def test_should_unpack_multiple_instances() -> None:
     assert decoded_1 == original_1
     assert decoded_2 == original_2
     assert decoded_3 == original_3
-
-
-def test_new_type() -> None:
-    NewInt = NewType("new_int", int)
-
-    @dataclass
-    class TestData:
-        value: Annotated[NewInt, bstruct.Encodings.u8]
-
-    encoding = bstruct.derive(TestData)
-
-    original = TestData(NewInt(1))
-
-    data = encoding.encode(original)
-    decoded = encoding.decode(data)
-
-    assert decoded == original
 
 
 def test_should_correctly_handle_byte_order() -> None:

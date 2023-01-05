@@ -2,7 +2,6 @@ from __future__ import annotations
 from io import BufferedIOBase
 from typing import (
     Any,
-    NewType,
     Union,
     Generic,
     Iterator,
@@ -370,8 +369,6 @@ def _derive(
             raise TypeError("Inner type for list needed.")
         elif typing.get_origin(annotated_type) is list:
             return _resolve_array_encoding(annotated_type, annotation_args)
-        elif type(annotated_type) is NewType:
-            return _resolve_unsafe_encoding(annotation_args)
         else:
             return _resolve_simple_encoding(annotated_type, annotation_args)
 
@@ -450,15 +447,6 @@ def _resolve_simple_encoding(target: type[T], metadata: list[Any]) -> Encoding[T
                 return data
 
     raise TypeError(f"Cannot find type annotation for type {target}")
-
-
-def _resolve_unsafe_encoding(metadata: list[Any]) -> Encoding[Any]:
-    for data in metadata:
-        if isinstance(data, (_NativeEncoding, CustomEncoding)):
-            data: Encoding[Any] = data
-            return data
-
-    raise TypeError("Cannot find encoding")
 
 
 def _resolve_dataclass_encoding(cls: type[T]) -> CustomEncoding[T]:
