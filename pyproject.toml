@@ -7,6 +7,12 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/flxbe/bstruct"
 documentation = "https://bstruct.readthedocs.io"
+classifies = [
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Intended Audience :: Developers",
+    "Typing :: Typed",
+]
 
 [tool.poetry.urls]
 Changelog = "https://github.com/flxbe/bstruct/blob/main/CHANGELOG.md"
