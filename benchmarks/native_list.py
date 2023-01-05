@@ -1,9 +1,9 @@
 from typing import Annotated
 
-import pyperf
-import bstruct
 import construct
+import pyperf
 
+import bstruct
 
 BstructList = Annotated[list[bstruct.u8], bstruct.Array(10)]
 

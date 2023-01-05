@@ -1,9 +1,10 @@
-from typing import Annotated
 from dataclasses import dataclass
+from typing import Annotated
 
-import pyperf
-import bstruct
 import construct
+import pyperf
+
+import bstruct
 
 
 @dataclass(slots=True)

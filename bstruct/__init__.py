@@ -1,23 +1,24 @@
 from __future__ import annotations
-from io import BufferedIOBase
-from typing import (
-    Any,
-    Union,
-    Generic,
-    Iterator,
-    TypeVar,
-    Callable,
-    Literal,
-    Annotated,
-    Iterable,
-)
-import typing
-import inspect
-import dataclasses
-from enum import IntEnum
-from struct import Struct as _Struct, error as _StructError
-from decimal import Decimal
 
+import dataclasses
+import inspect
+import typing
+from decimal import Decimal
+from enum import IntEnum
+from io import BufferedIOBase
+from struct import Struct as _Struct
+from struct import error as _StructError
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    Generic,
+    Iterable,
+    Iterator,
+    Literal,
+    TypeVar,
+    Union,
+)
 
 __version__ = "0.4.0"
 

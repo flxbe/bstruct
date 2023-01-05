@@ -1,7 +1,7 @@
-from typing import Annotated
 from dataclasses import dataclass
-from enum import IntEnum
 from decimal import Decimal
+from enum import IntEnum
+from typing import Annotated
 
 import pytest
 

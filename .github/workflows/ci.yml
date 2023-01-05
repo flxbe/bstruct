@@ -34,8 +34,10 @@ jobs:
       - name: Check Formatting
         run: poetry run black --check .
 
-      - name: Lint
-        run: poetry run pyright bstruct tests docs
+      - name: Ling types
+        run: |
+          poetry run pyright bstruct tests docs
+          poetry run ruff .
 
       - name: Test
         run: poetry run pytest

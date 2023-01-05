@@ -26,6 +26,7 @@ black = "^22.8.0"
 pyright = "^1.1.271"
 construct = "2.10.68"
 pyperf = "^2.5.0"
+ruff = "^0.0.211"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^5.3.0"
@@ -44,3 +45,6 @@ build-backend = "poetry.core.masonry.api"
 typeCheckingMode = "strict"
 useLibraryCodeForTypes = true
 reportMissingTypeStubs = false
+
+[tool.ruff]
+select = ["I"]
