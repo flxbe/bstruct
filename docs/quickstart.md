@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import bstruct
 
 
-@dataclass(slots=True)
+@dataclass
 class Measurement:
     timestamp: bstruct.u32  # shorthand for: Annotated[int, bstruct.Encodings.u32]
     values: Annotated[list[bstruct.u8], bstruct.Array(3)]

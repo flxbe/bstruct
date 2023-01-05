@@ -13,7 +13,7 @@ from dataclasses import dataclass
 import bstruct
 
 
-@dataclass(slots=True)
+@dataclass
 class Header:
     item_count: bstruct.u8
 
@@ -21,7 +21,7 @@ class Header:
 HeaderEncoding = bstruct.derive(Header)
 
 
-@dataclass(slots=True)
+@dataclass
 class Item:
     value: bstruct.u8
 
