@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `read`, `read_many`, `write`, and `write_many`.
 - Make `CustomEncoding` public.
 - Add support for Python 3.9.
+- Improve error messages.
 
 ### Removed
 
