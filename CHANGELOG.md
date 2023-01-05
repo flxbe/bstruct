@@ -12,10 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use `bstruct.derive` to create encodings for generic type expressions.
 - Add `read`, `read_many`, `write`, and `write_many`.
 - Make `CustomEncoding` public.
+- Add support for Python 3.9.
 
 ### Removed
 
 - Remove `bstruct.patch`.
+- Remove native support for `NewType` in favor for Python 3.9.
 
 ## [0.4.0] - 2022-12-31
 
