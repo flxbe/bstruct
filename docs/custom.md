@@ -11,8 +11,6 @@ During encoding, the fields must be pushed into the provided `AttributeList`.
 The order in which the attributes are pushed/popped **must be the same** during decoding and encoding.
 
 ```{testcode}
-from typing import Annotated
-
 import bstruct
 
 
@@ -56,8 +54,8 @@ RangeEncoding = bstruct.CustomEncoding.create(
 )
 
 
-range = Range(1, 2)
-data = RangeEncoding.encode(range)
+value = Range(1, 2)
+data = RangeEncoding.encode(value)
 
 assert data == b"\x01\x02"
 
