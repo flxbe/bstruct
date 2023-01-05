@@ -322,3 +322,29 @@ def test_should_fail_for_missing_array_length() -> None:
         bstruct.derive(Struct)
 
     assert str(exc_info.value) == "Cannot find length annotation for list"
+
+
+def test_should_fail_for_missing_item() -> None:
+    @dataclass
+    class Struct:
+        items: Annotated[list[bool], bstruct.Array(2)]
+
+    StructEncoding = bstruct.derive(Struct)
+
+    struct = Struct(items=[True])
+
+    with pytest.raises(bstruct.BstructError):
+        StructEncoding.encode(struct)
+
+
+def test_should_fail_too_many_items() -> None:
+    @dataclass
+    class Struct:
+        items: Annotated[list[bool], bstruct.Array(2)]
+
+    StructEncoding = bstruct.derive(Struct)
+
+    struct = Struct(items=[True, True, True])
+
+    with pytest.raises(bstruct.BstructError):
+        StructEncoding.encode(struct)
