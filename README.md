@@ -62,33 +62,33 @@ on a MacBook Pro 2018 with a 2.3GHz i5 processor.
 
 ### `benchmarks/builtins.py`
 
-| Name                 | decode  | encode  |
-| -------------------- | ------- | ------- |
-| struct               | 0.56 us | 0.22 us |
-| bstruct              | 2.58 us | 1.68 us |
-| construct (compiled) | 9.31 us | 9.85 us |
+| Name                 | decode  | encode   |
+| -------------------- | ------- | -------- |
+| struct               | 0.54 us | 0.23 us  |
+| bstruct              | 2.51 us | 1.64 us  |
+| construct (compiled) | 9.49 us | 10.00 us |
 
 ### `benchmarks/native_list.py`
 
 | Name                 | decode  | encode  |
 | -------------------- | ------- | ------- |
-| struct               | 0.16 us | 0.32 us |
-| bstruct              | 2.46 us | 0.97 us |
-| construct (compiled) | 4.02 us | 6.86 us |
+| struct               | 0.17 us | 0.33 us |
+| bstruct              | 1.70 us | 0.59 us |
+| construct (compiled) | 4.04 us | 6.61 us |
 
 ### `benchmarks/class_list.py`
 
 | Name                 | decode  | encode  |
 | -------------------- | ------- | ------- |
-| bstruct              | 8.54 us | 5.13 us |
-| construct (compiled) | 34.4 us | 38.6 us |
+| bstruct              | 7.37 us | 4.81 us |
+| construct (compiled) | 34.5 us | 36.6 us |
 
 ### `benchmarks/nested.py`
 
 | Name                 | decode  | encode  |
 | -------------------- | ------- | ------- |
-| bstruct              | 6.30 us | 4.47 us |
-| construct (compiled) | 29.2 us | 29.2 us |
+| bstruct              | 6.05 us | 4.42 us |
+| construct (compiled) | 27.6 us | 29.5 us |
 
 ## Issues and Contributing
 
