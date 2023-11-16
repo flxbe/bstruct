@@ -30,7 +30,7 @@ raw_struct = BstructListEncoding.get_struct("little")
 raw_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
 
 
-def _decode_struct() -> tuple[int]:
+def _decode_struct() -> tuple[int, ...]:
     return raw_struct.unpack(list_data)
 
 

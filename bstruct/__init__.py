@@ -20,12 +20,15 @@ from typing import (
     Union,
 )
 
-
 __version__ = "0.5.0"
 
 
 class BstructError(Exception):
     pass
+
+
+if typing.TYPE_CHECKING:
+    from _typeshed import DataclassInstance
 
 
 ByteOrder = Literal["big", "little"]
@@ -474,7 +477,11 @@ def _resolve_simple_encoding(target: type[T], metadata: list[Any]) -> Encoding[T
     raise TypeError(f"Cannot find encoding for type {target.__name__}")
 
 
-def _resolve_dataclass_encoding(cls: type[T]) -> CustomEncoding[T]:
+
+D = TypeVar("D", bound=DataclassInstance)
+
+
+def _resolve_dataclass_encoding(cls: type[D]) -> CustomEncoding[D]:
     fields = dataclasses.fields(cls)
 
     attribute_decoders: list[Decoder[Any]] = []
@@ -489,7 +496,7 @@ def _resolve_dataclass_encoding(cls: type[T]) -> CustomEncoding[T]:
 
     attribute_names = [field.name for field in fields]
 
-    def _decode(raw_attributes: ValueIterator, byteorder: ByteOrder) -> T:
+    def _decode(raw_attributes: ValueIterator, byteorder: ByteOrder) -> D:
         attributes = [
             decode_attribute(raw_attributes, byteorder)
             for decode_attribute in attribute_decoders
@@ -497,7 +504,7 @@ def _resolve_dataclass_encoding(cls: type[T]) -> CustomEncoding[T]:
 
         return cls(*attributes)
 
-    def _encode(value: T, raw_attributes: ValueList, byteorder: ByteOrder) -> None:
+    def _encode(value: D, raw_attributes: ValueList, byteorder: ByteOrder) -> None:
         for encode_attribute, name in zip(attribute_encoders, attribute_names):
             attribute = getattr(value, name)
             encode_attribute(attribute, raw_attributes, byteorder)
