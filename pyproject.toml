@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bstruct"
-version = "0.6.0"
+version = "0.6.1"
 description = "Simple and efficient binary (de)serialization using type annotations."
 authors = ["flxbe <flxbe@mailbox.org>"]
 license = "MIT"
