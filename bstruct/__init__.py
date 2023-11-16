@@ -336,6 +336,10 @@ class Encodings:
         encode_attributes=_encode_int256,
     )
 
+    f16 = _NativeEncoding(float, format="e")
+    f32 = _NativeEncoding(float, format="f")
+    f64 = _NativeEncoding(float, format="d")
+
     I80F48 = CustomEncoding.create(
         Decimal,
         fields=[Bytes(16)],
@@ -357,6 +361,10 @@ i32 = Annotated[int, Encodings.i32]
 i64 = Annotated[int, Encodings.i64]
 i128 = Annotated[int, Encodings.i128]
 i256 = Annotated[int, Encodings.i256]
+
+f16 = Annotated[float, Encodings.f16]
+f32 = Annotated[float, Encodings.f32]
+f64 = Annotated[float, Encodings.f64]
 
 I80F48 = Annotated[Decimal, Encodings.I80F48]
 

@@ -177,6 +177,23 @@ def test_should_encode_I80F48() -> None:
     assert decoded == original
 
 
+def test_should_encode_float() -> None:
+    @dataclass
+    class TestData:
+        f16: bstruct.f16
+        f32: bstruct.f32
+        f64: bstruct.f64
+
+    encoding = bstruct.derive(TestData)
+
+    original = TestData(0.15625, 1234.15625, 1234567.1234567)
+
+    data = encoding.encode(original)
+    decoded = encoding.decode(data)
+
+    assert decoded == original
+
+
 def test_should_encode_arrays() -> None:
     @dataclass
     class TestItem:
