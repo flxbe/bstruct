@@ -30,6 +30,10 @@ class BstructError(Exception):
 if typing.TYPE_CHECKING:
     from _typeshed import DataclassInstance
 
+    D = TypeVar("D", bound=DataclassInstance)
+else:
+    D = TypeVar("D")
+
 
 ByteOrder = Literal["big", "little"]
 
@@ -475,9 +479,6 @@ def _resolve_simple_encoding(target: type[T], metadata: list[Any]) -> Encoding[T
                 return data
 
     raise TypeError(f"Cannot find encoding for type {target.__name__}")
-
-
-D = TypeVar("D", bound=DataclassInstance)
 
 
 def _resolve_dataclass_encoding(cls: type[D]) -> CustomEncoding[D]:
