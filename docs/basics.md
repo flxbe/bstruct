@@ -70,6 +70,10 @@ class Data:
     i128: bstruct.i128
     i256: bstruct.i256
 
+    f16: bstruct.f16
+    f32: bstruct.f32
+    f64: bstruct.f64
+
     i80f48: bstruct.I80F48
 
     raw: Annotated[bytes, bstruct.Bytes(size=8)]
