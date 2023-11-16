@@ -477,7 +477,6 @@ def _resolve_simple_encoding(target: type[T], metadata: list[Any]) -> Encoding[T
     raise TypeError(f"Cannot find encoding for type {target.__name__}")
 
 
-
 D = TypeVar("D", bound=DataclassInstance)
 
 
