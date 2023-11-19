@@ -138,6 +138,23 @@ def test_should_encode_bytes() -> None:
     assert decoded == original
 
 
+def test_should_encode_native_types() -> None:
+    @dataclass
+    class TestData:
+        boolean: bool
+        i32: int
+        f64: float
+
+    encoding = bstruct.derive(TestData)
+
+    original = TestData(boolean=True, i32=-123456, f64=7654321.1234567)
+
+    data = encoding.encode(original)
+    decoded = encoding.decode(data)
+
+    assert decoded == original
+
+
 def test_should_encode_nested_classes() -> None:
     @dataclass
     class InnerClass:
@@ -286,12 +303,12 @@ def test_should_fail_for_wrong_data_size() -> None:
 def test_should_fail_for_missing_annotation() -> None:
     @dataclass
     class Struct:
-        value: int
+        value: complex
 
     with pytest.raises(TypeError) as exc_info:
         bstruct.derive(Struct)
 
-    assert str(exc_info.value) == "Missing annotation for type int"
+    assert str(exc_info.value) == "Missing annotation for type complex"
 
 
 def test_should_fail_for_missing_encoding() -> None:

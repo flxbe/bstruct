@@ -390,6 +390,10 @@ def _derive(
 
     if attribute_type is bool:
         return Encodings.bool
+    elif attribute_type is int:
+        return Encodings.i32
+    elif attribute_type is float:
+        return Encodings.f64
     elif inspect.isclass(attribute_type) and dataclasses.is_dataclass(attribute_type):
         return _resolve_dataclass_encoding(attribute_type)
     elif typing.get_origin(attribute_type) is typing.Annotated:
