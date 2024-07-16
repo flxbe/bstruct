@@ -6,7 +6,7 @@
 
 <!-- start elevator-pitch -->
 
-Simple, efficient and dependency-free binary (de)serialization using type annotations with.
+Simple, efficient and dependency-free binary (de)serialization using type annotations.
 Supports easy fallback to Python's built-in `struct` library for maximum performance.
 
 <!-- end elevator-pitch -->
